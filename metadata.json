@@ -1,0 +1,6 @@
+{
+  "name": "GridRumus",
+  "description": "Panduan lengkap rumus, trik, shortcut Excel dengan simulator grid interaktif, penjelasan praktis dunia kerja, dan file latihan .xlsx siap unduh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
