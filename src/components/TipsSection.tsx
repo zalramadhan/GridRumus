@@ -24,56 +24,73 @@ export function TipsSection() {
   return (
     <section
       id="trik-shortcut"
-      className="py-14 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors duration-200"
+      className="py-16 bg-[#FEFEFE] dark:bg-[#002b05] transition-colors duration-200"
     >
       <div className="mx-auto max-w-[1320px] px-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-7">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1.5">
+            <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#008120] dark:text-[#A2DF20] mb-1.5">
               <Zap className="h-4 w-4" aria-hidden="true" />
               <span>Efisiensi &amp; Pintasan</span>
             </div>
-            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Trik Kerja Cepat &amp; Shortcut Wajib
+            <h2 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#07170B] dark:text-[#FEFEFE]">
+              Trik Kerja Cepat &amp;{' '}
+              <span className="text-[#008120] dark:text-[#A2DF20]">
+                Shortcut Wajib
+              </span>
             </h2>
-            <p className="mt-1.5 text-sm sm:text-base text-slate-600 dark:text-slate-300 dark:tracking-[0.01em] max-w-2xl">
+            <p className="mt-2 text-sm sm:text-base text-[#3D4D42] dark:text-[#B5C4BA] dark:tracking-[0.01em] max-w-2xl">
               Teknik praktis sehari-hari untuk membersihkan data kotor, menghindari salah geser rumus, dan mempercepat pekerjaan kantor hingga berkali lipat.
             </p>
           </div>
 
           <div
-            className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800 p-1 self-start shrink-0"
+            className="inline-flex items-center rounded-full bg-[#EAF2EC] dark:bg-[#001a04] p-1 self-start shrink-0"
             role="group"
             aria-label="Pilih sistem operasi shortcut"
           >
             <button
               type="button"
               onClick={() => setOsMode('win')}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 osMode === 'win'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'text-[#FEFEFE] dark:text-[#07170B]'
+                  : 'text-[#3D4D42] dark:text-[#B5C4BA] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
               }`}
             >
-              <Monitor className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Shortcut Windows</span>
+              {osMode === 'win' && (
+                <motion.span
+                  layoutId="tips-os-pill"
+                  transition={{ type: 'spring', stiffness: 450, damping: 34 }}
+                  className="absolute inset-0 rounded-full bg-[#07170B] dark:bg-[#A2DF20]"
+                />
+              )}
+              <Monitor className="relative z-10 h-3.5 w-3.5" aria-hidden="true" />
+              <span className="relative z-10">Shortcut Windows</span>
             </button>
             <button
               type="button"
               onClick={() => setOsMode('mac')}
-              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 osMode === 'mac'
-                  ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'text-[#FEFEFE] dark:text-[#07170B]'
+                  : 'text-[#3D4D42] dark:text-[#B5C4BA] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
               }`}
             >
-              <Command className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Shortcut macOS</span>
+              {osMode === 'mac' && (
+                <motion.span
+                  layoutId="tips-os-pill"
+                  transition={{ type: 'spring', stiffness: 450, damping: 34 }}
+                  className="absolute inset-0 rounded-full bg-[#07170B] dark:bg-[#A2DF20]"
+                />
+              )}
+              <Command className="relative z-10 h-3.5 w-3.5" aria-hidden="true" />
+              <span className="relative z-10">Shortcut macOS</span>
             </button>
           </div>
         </div>
 
-        <div className="mb-8 flex items-center gap-1.5 overflow-x-auto pb-2">
+        <div className="mb-8 flex items-center gap-2 overflow-x-auto pb-2">
           {TIP_CATEGORIES.map((cat) => {
             const active = selectedCategory === cat;
             return (
@@ -83,13 +100,20 @@ export function TipsSection() {
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.12 }}
                 onClick={() => setSelectedCategory(cat)}
-                className={`rounded-lg px-3.5 py-2 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`relative rounded-full px-4 py-2 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   active
-                    ? 'bg-emerald-700 dark:bg-emerald-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white'
+                    ? 'text-[#A2DF20] dark:text-[#07170B]'
+                    : 'bg-[#F5F6F6] dark:bg-[#001a04] text-[#3D4D42] dark:text-[#B5C4BA] hover:bg-[#EAF2EC]/80 dark:hover:bg-[#11281B] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
                 }`}
               >
-                {cat}
+                {active && (
+                  <motion.span
+                    layoutId="tips-category-pill"
+                    transition={{ type: 'spring', stiffness: 450, damping: 34 }}
+                    className="absolute inset-0 rounded-full bg-[#07170B] dark:bg-[#A2DF20]"
+                  />
+                )}
+                <span className="relative z-10">{cat}</span>
               </motion.button>
             );
           })}
@@ -109,45 +133,45 @@ export function TipsSection() {
                 exit={{ opacity: 0, scale: 0.97 }}
                 whileHover={{ y: -2 }}
                 transition={{ duration: 0.17, ease: [0.16, 1, 0.3, 1] }}
-                className="flex flex-col justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-[#F8FAFC]/60 dark:bg-slate-950/60 p-5 transition-colors duration-200"
+                className="group flex flex-col justify-between rounded-2xl bg-[#F5F6F6] dark:bg-[#021302] p-6 transition-colors duration-200"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400 mb-2">
+                  <div className="flex items-center justify-between gap-3 text-xs text-[#5E7064] dark:text-[#8A9A8F] mb-2.5">
                     <span>{tip.category}</span>
-                    <kbd className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-2 py-0.5 whitespace-nowrap shrink-0">
-                      <Keyboard className="h-3 w-3 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+                    <kbd className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-[#07170B] dark:text-[#FEFEFE] bg-[#FEFEFE] dark:bg-[#041006] rounded-md px-2.5 py-1 whitespace-nowrap shrink-0 transition-transform duration-150 group-hover:scale-[1.04]">
+                      <Keyboard className="h-3 w-3 text-[#008120] dark:text-[#A2DF20]" aria-hidden="true" />
                       <span>{osMode === 'win' ? tip.shortcutWin : tip.shortcutMac}</span>
                     </kbd>
                   </div>
 
-                  <h3 className="font-display text-base font-bold text-slate-900 dark:text-white leading-snug">
+                  <h3 className="font-display text-base font-bold text-[#07170B] dark:text-[#98ff00] leading-snug">
                     {tip.title}
                   </h3>
 
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300 dark:tracking-[0.01em]">
+                  <p className="mt-2 text-sm leading-relaxed text-[#3D4D42] dark:text-[#B5C4BA] dark:tracking-[0.01em]">
                     {tip.summary}
                   </p>
 
-                  <ol className="mt-4 space-y-1.5 text-xs leading-relaxed text-slate-700 dark:text-slate-300 list-decimal list-inside border-t border-slate-200/80 dark:border-slate-800 pt-3">
+                  <ol className="mt-4 space-y-1.5 text-xs leading-relaxed text-[#3D4D42] dark:text-[#B5C4BA] list-decimal list-inside">
                     {tip.steps.map((step, idx) => (
                       <li key={idx}>{step}</li>
                     ))}
                   </ol>
                 </div>
 
-                <div className="mt-4 border-t border-slate-200/80 dark:border-slate-800 pt-3">
+                <div className="mt-5">
                   {tip.beforeAfter ? (
                     <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                      <div className="rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2.5 py-1.5 text-slate-500 dark:text-slate-400 truncate">
+                      <div className="rounded-lg bg-[#FEFEFE] dark:bg-[#041006] px-2.5 py-1.5 text-[#5E7064] dark:text-[#8A9A8F] truncate">
                         Sebelum: {tip.beforeAfter.before}
                       </div>
-                      <div className="rounded bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/70 px-2.5 py-1.5 text-emerald-900 dark:text-emerald-200 font-medium truncate">
+                      <div className="rounded-lg bg-[#EAF2EC] dark:bg-[#A2DF20]/15 px-2.5 py-1.5 text-[#008120] dark:text-[#A2DF20] font-semibold truncate">
                         Sesudah: {tip.beforeAfter.after}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">
+                    <p className="text-xs text-[#5E7064] dark:text-[#8A9A8F] leading-relaxed">
+                      <span className="font-semibold text-[#07170B] dark:text-[#FEFEFE]">
                         Kasus nyata:
                       </span>{' '}
                       {tip.realExample}

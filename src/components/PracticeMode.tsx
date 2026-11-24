@@ -158,11 +158,11 @@ export function PracticeMode({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors duration-200">
+    <div className="bg-[#FEFEFE] dark:bg-[#0A1815] rounded-2xl transition-colors duration-200 overflow-hidden">
       {/* Header Latihan */}
-      <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="px-6 py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400 font-semibold mb-1">
+          <div className="flex items-center gap-2 text-xs text-[#008120] dark:text-[#A2DF20] font-semibold mb-1">
             {mode === 'challenge' ? (
               <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
             ) : (
@@ -170,20 +170,20 @@ export function PracticeMode({
             )}
             <span>{subtitle}</span>
           </div>
-          <h3 className="font-display text-xl font-bold text-slate-900 dark:text-white">
+          <h3 className="font-display text-xl font-extrabold text-[#07170B] dark:text-[#FEFEFE]">
             {title} ({questions.length} Soal)
           </h3>
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
+          <span className="font-mono text-xs font-bold text-[#07170B] dark:text-[#A2DF20] tabular-nums">
             Benar: {earnedCorrectCount}/{questions.length}
           </span>
           <motion.button
             type="button"
             whileTap={{ scale: 0.97 }}
             onClick={onExit}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-4 py-2 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] whitespace-nowrap shrink-0 cursor-pointer transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             <span>{exitLabel}</span>
@@ -192,7 +192,7 @@ export function PracticeMode({
       </div>
 
       {/* Navigasi Nomor Soal */}
-      <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/50 px-6 py-3 flex items-center gap-2 overflow-x-auto">
+      <div className="bg-[#EAF2EC]/55 dark:bg-[#041006]/70 px-6 py-3 flex items-center gap-2 overflow-x-auto">
         {questions.map((q, idx) => {
           const isCurrent = !showSummary && idx === currentIdx;
           const status = results[q.id];
@@ -204,14 +204,14 @@ export function PracticeMode({
                 setShowSummary(false);
                 setCurrentIdx(idx);
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 isCurrent
-                  ? 'bg-slate-900 dark:bg-emerald-600 text-white'
+                  ? 'bg-[#07170B] text-[#A2DF20] dark:bg-[#A2DF20] dark:text-[#07170B]'
                   : status?.isCorrect
-                  ? 'bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+                  ? 'bg-[#EAF2EC] dark:bg-[#A2DF20]/15 text-[#008120] dark:text-[#A2DF20]'
                   : status && !status.isCorrect
-                  ? 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-800 dark:text-red-300'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
+                  ? 'bg-red-100/80 dark:bg-red-950/50 text-red-800 dark:text-red-300'
+                  : 'bg-[#FEFEFE] dark:bg-[#0A1815] text-[#3D4D42] dark:text-[#B5C4BA] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
               }`}
             >
               {status?.isCorrect && (
@@ -228,10 +228,10 @@ export function PracticeMode({
         <button
           type="button"
           onClick={handleOpenSummary}
-          className={`ml-auto inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+          className={`ml-auto inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
             showSummary
-              ? 'bg-slate-900 dark:bg-emerald-600 text-white'
-              : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              ? 'bg-[#07170B] text-[#A2DF20] dark:bg-[#A2DF20] dark:text-[#07170B]'
+              : 'bg-[#FEFEFE] dark:bg-[#0A1815] text-[#3D4D42] dark:text-[#B5C4BA] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
           }`}
         >
           <Award className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -250,25 +250,25 @@ export function PracticeMode({
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             className="p-6 space-y-6"
           >
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60 p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="rounded-2xl bg-[#EAF2EC]/65 dark:bg-[#041006] p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3.5">
                 <Award
-                  className="h-7 w-7 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5"
+                  className="h-7 w-7 text-[#008120] dark:text-[#A2DF20] shrink-0 mt-0.5"
                   aria-hidden="true"
                 />
                 <div>
-                  <h4 className="font-display text-lg font-bold text-slate-900 dark:text-white">
+                  <h4 className="font-display text-lg font-extrabold text-[#07170B] dark:text-[#FEFEFE]">
                     Ringkasan {title}
                   </h4>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                  <p className="mt-1 text-sm text-[#3D4D42] dark:text-[#B5C4BA]">
                     Skor mandiri Anda:{' '}
-                    <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">
+                    <span className="font-mono font-bold text-[#008120] dark:text-[#A2DF20] tabular-nums">
                       {earnedCorrectCount} dari {questions.length}
                     </span>{' '}
                     soal dijawab benar ({Math.round((earnedCorrectCount / questions.length) * 100)}%). Progres telah tersimpan di browser.
                   </p>
                   {displayedCorrectCount > earnedCorrectCount && (
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 text-xs text-[#5E7064] dark:text-[#8A9A8F]">
                       Soal yang dibuka lewat tombol Lihat Jawaban tetap dapat ditinjau ulang, namun tidak dihitung sebagai skor mandiri.
                     </p>
                   )}
@@ -280,7 +280,7 @@ export function PracticeMode({
                   type="button"
                   whileTap={{ scale: 0.97 }}
                   onClick={handleRestart}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#FEFEFE] hover:bg-[#DCE6DF] dark:bg-[#0A1815] dark:hover:bg-[#11281B] px-4 py-2 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>{mode === 'challenge' ? 'Tantangan Baru' : 'Ulangi Semua Soal'}</span>
@@ -289,41 +289,41 @@ export function PracticeMode({
                   type="button"
                   whileTap={{ scale: 0.97 }}
                   onClick={onExit}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 px-4 py-2 text-xs font-semibold text-white whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#A2DF20] hover:bg-[#93CE18] px-5 py-2 text-xs font-bold text-[#07170B] whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <span>Selesai &amp; Kembali</span>
                 </motion.button>
               </div>
             </div>
 
-            <div className="divide-y divide-slate-200 dark:divide-slate-800 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div className="space-y-2">
               {questions.map((q, idx) => {
                 const st = results[q.id];
                 const wasRevealed = Boolean(revealed[q.id]);
                 return (
                   <div
                     key={q.id}
-                    className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-slate-900 px-5 py-4"
+                    className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-[#F5F6F6] dark:bg-[#041006]/70 px-5 py-4"
                   >
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                      <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-[#07170B] dark:text-[#FEFEFE]">
                         {st?.isCorrect && !wasRevealed ? (
                           <CheckCircle2
-                            className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0"
+                            className="h-4 w-4 text-[#008120] dark:text-[#A2DF20] shrink-0"
                             aria-hidden="true"
                           />
                         ) : (
                           <XCircle
-                            className="h-4 w-4 text-slate-400 dark:text-slate-500 shrink-0"
+                            className="h-4 w-4 text-[#78887D] dark:text-[#6E8074] shrink-0"
                             aria-hidden="true"
                           />
                         )}
                         <span>{q.title}</span>
-                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                        <span className="text-xs font-normal text-[#5E7064] dark:text-[#8A9A8F]">
                           · {q.formulaName}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-mono">
+                      <p className="mt-1 text-xs text-[#5E7064] dark:text-[#8A9A8F] font-mono">
                         Jawaban baku: {q.acceptedFormulas[0]}
                       </p>
                     </div>
@@ -334,7 +334,7 @@ export function PracticeMode({
                         setShowSummary(false);
                         setCurrentIdx(idx);
                       }}
-                      className="self-start sm:self-center rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 whitespace-nowrap shrink-0 cursor-pointer"
+                      className="self-start sm:self-center rounded-full bg-[#FEFEFE] dark:bg-[#0A1815] px-4 py-1.5 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] hover:bg-[#EAF2EC] dark:hover:bg-[#11281B] whitespace-nowrap shrink-0 cursor-pointer transition-colors"
                     >
                       Buka Soal {idx + 1}
                     </button>
@@ -353,14 +353,14 @@ export function PracticeMode({
             className="p-6 space-y-5"
           >
             <div>
-              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[#5E7064] dark:text-[#8A9A8F] mb-1">
                 <span>
                   Soal {currentIdx + 1} dari {questions.length}
                 </span>
                 <span aria-hidden="true">·</span>
                 <span>
                   Sel Target:{' '}
-                  <span className="font-mono font-semibold text-emerald-700 dark:text-emerald-400">
+                  <span className="font-mono font-bold text-[#008120] dark:text-[#A2DF20]">
                     {currentQuestion.targetCell}
                   </span>
                 </span>
@@ -371,21 +371,21 @@ export function PracticeMode({
                   </>
                 )}
               </div>
-              <h4 className="font-display text-lg font-bold text-slate-900 dark:text-white">
+              <h4 className="font-display text-lg font-bold text-[#07170B] dark:text-[#FEFEFE]">
                 {currentQuestion.title}
               </h4>
-              <p className="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+              <p className="mt-1.5 text-sm leading-relaxed text-[#3D4D42] dark:text-[#B5C4BA]">
                 {currentQuestion.instruction}
               </p>
             </div>
 
             {/* Mini Spreadsheet Interaktif */}
             <div>
-              <div className="flex items-stretch border border-slate-300 dark:border-slate-700 border-b-0 rounded-t-lg bg-white dark:bg-slate-900 overflow-hidden">
-                <div className="w-16 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-2.5 py-2 text-center font-mono text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center justify-center">
+              <div className="flex items-stretch border border-[#07170B]/12 dark:border-[#EAF2EC]/14 border-b-0 rounded-t-xl bg-[#FEFEFE] dark:bg-[#041006] overflow-hidden">
+                <div className="w-16 shrink-0 border-r border-[#07170B]/10 dark:border-[#EAF2EC]/12 bg-[#EAF2EC]/60 dark:bg-[#07170B] px-2.5 py-2 text-center font-mono text-xs font-bold text-[#008120] dark:text-[#A2DF20] flex items-center justify-center">
                   {currentQuestion.targetCell}
                 </div>
-                <div className="w-9 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/50 px-2 py-2 text-center font-mono text-xs italic font-semibold text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
+                <div className="w-9 shrink-0 border-r border-[#07170B]/10 dark:border-[#EAF2EC]/12 bg-[#F5F6F6] dark:bg-[#07170B]/60 px-2 py-2 text-center font-mono text-xs italic font-semibold text-[#008120] dark:text-[#A2DF20] flex items-center justify-center">
                   fx
                 </div>
                 <input
@@ -410,21 +410,21 @@ export function PracticeMode({
                   }}
                   placeholder={`Ketik rumus di sini, misal ${currentQuestion.acceptedFormulas[0].slice(0, 4)}...`}
                   aria-label={`Ketik rumus Excel untuk sel ${currentQuestion.targetCell}`}
-                  className="flex-1 bg-transparent px-3 py-2 font-mono text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
+                  className="flex-1 bg-transparent px-3 py-2 font-mono text-xs sm:text-sm text-[#07170B] dark:text-[#FEFEFE] placeholder:text-[#78887D] dark:placeholder:text-[#6E8074] focus:outline-none"
                 />
               </div>
 
-              <div className="overflow-x-auto border border-slate-300 dark:border-slate-700 rounded-b-lg bg-white dark:bg-slate-900">
+              <div className="overflow-x-auto border border-[#07170B]/12 dark:border-[#EAF2EC]/14 rounded-b-xl bg-[#FEFEFE] dark:bg-[#041006]">
                 <table className="w-full border-collapse text-xs">
                   <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700">
-                      <th className="w-10 border-r border-slate-300 dark:border-slate-700 py-1.5 px-2 text-center font-mono font-medium text-slate-500 dark:text-slate-400 select-none">
+                    <tr className="bg-[#EAF2EC]/70 dark:bg-[#07170B] border-b border-[#07170B]/12 dark:border-[#EAF2EC]/12">
+                      <th className="w-10 border-r border-[#07170B]/10 dark:border-[#EAF2EC]/12 py-1.5 px-2 text-center font-mono font-medium text-[#5E7064] dark:text-[#8A9A8F] select-none">
                         #
                       </th>
                       {currentQuestion.columns.map((col) => (
                         <th
                           key={col}
-                          className="border-r last:border-r-0 border-slate-300 dark:border-slate-700 py-1.5 px-3 text-center font-mono font-semibold text-slate-600 dark:text-slate-300 select-none min-w-[100px]"
+                          className="border-r last:border-r-0 border-[#07170B]/10 dark:border-[#EAF2EC]/12 py-1.5 px-3 text-center font-mono font-semibold text-[#3D4D42] dark:text-[#B5C4BA] select-none min-w-[100px]"
                         >
                           {col}
                         </th>
@@ -435,9 +435,9 @@ export function PracticeMode({
                     {currentQuestion.rows.map((row) => (
                       <tr
                         key={row.rowNum}
-                        className="border-b last:border-b-0 border-slate-200 dark:border-slate-800"
+                        className="border-b last:border-b-0 border-[#07170B]/8 dark:border-[#EAF2EC]/8"
                       >
-                        <td className="border-r border-slate-300 dark:border-slate-700 bg-slate-100/80 dark:bg-slate-800/80 py-1.5 px-2 text-center font-mono font-medium text-slate-500 dark:text-slate-400 select-none tabular-nums">
+                        <td className="border-r border-[#07170B]/10 dark:border-[#EAF2EC]/12 bg-[#EAF2EC]/45 dark:bg-[#07170B]/80 py-1.5 px-2 text-center font-mono font-medium text-[#5E7064] dark:text-[#8A9A8F] select-none tabular-nums">
                           {row.rowNum}
                         </td>
                         {currentQuestion.columns.map((col) => {
@@ -447,7 +447,7 @@ export function PracticeMode({
                             return (
                               <td
                                 key={ref}
-                                className="border-r last:border-r-0 border-slate-200 dark:border-slate-800 px-3 py-2"
+                                className="border-r last:border-r-0 border-[#07170B]/8 dark:border-[#EAF2EC]/8 px-3 py-2"
                               />
                             );
                           }
@@ -459,10 +459,10 @@ export function PracticeMode({
                             return (
                               <td
                                 key={ref}
-                                className={`border-r last:border-r-0 border-slate-200 dark:border-slate-800 p-0 ring-2 ring-inset ${
+                                className={`border-r last:border-r-0 border-[#07170B]/8 dark:border-[#EAF2EC]/8 p-0 ring-2 ring-inset ${
                                   result?.isCorrect
-                                    ? 'bg-emerald-50 dark:bg-emerald-950/60 ring-emerald-600 dark:ring-emerald-400'
-                                    : 'bg-emerald-50/40 dark:bg-emerald-950/25 ring-emerald-700 dark:ring-emerald-500'
+                                    ? 'bg-[#EAF2EC] dark:bg-[#A2DF20]/18 ring-[#008120] dark:ring-[#A2DF20]'
+                                    : 'bg-[#EAF2EC]/45 dark:bg-[#A2DF20]/8 ring-[#008120] dark:ring-[#A2DF20]'
                                 }`}
                               >
                                 {result?.isCorrect ? (
@@ -470,7 +470,7 @@ export function PracticeMode({
                                     initial={{ opacity: 0.6, scale: 0.96 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ duration: 0.16 }}
-                                    className={`px-3 py-2 font-mono font-bold text-emerald-900 dark:text-emerald-200 tabular-nums ${
+                                    className={`px-3 py-2 font-mono font-bold text-[#008120] dark:text-[#A2DF20] tabular-nums ${
                                       cell.align === 'right' ? 'text-right' : 'text-left'
                                     }`}
                                   >
@@ -492,7 +492,7 @@ export function PracticeMode({
                                     }}
                                     placeholder="=..."
                                     aria-label={`Input sel target ${ref}`}
-                                    className={`w-full bg-transparent px-3 py-2 font-mono text-xs text-slate-900 dark:text-white placeholder:text-emerald-700/60 dark:placeholder:text-emerald-400/60 focus:outline-none ${
+                                    className={`w-full bg-transparent px-3 py-2 font-mono text-xs text-[#07170B] dark:text-[#FEFEFE] placeholder:text-[#008120]/60 dark:placeholder:text-[#A2DF20]/60 focus:outline-none ${
                                       cell.align === 'right' ? 'text-right' : 'text-left'
                                     }`}
                                   />
@@ -504,10 +504,10 @@ export function PracticeMode({
                           return (
                             <td
                               key={ref}
-                              className={`border-r last:border-r-0 border-slate-200 dark:border-slate-800 px-3 py-2 tabular-nums ${
+                              className={`border-r last:border-r-0 border-[#07170B]/8 dark:border-[#EAF2EC]/8 px-3 py-2 tabular-nums ${
                                 isHeader
-                                  ? 'bg-slate-100/90 dark:bg-slate-800/90 font-semibold text-slate-800 dark:text-slate-100'
-                                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300'
+                                  ? 'bg-[#EAF2EC]/75 dark:bg-[#102418] font-semibold text-[#07170B] dark:text-[#FEFEFE]'
+                                  : 'bg-[#FEFEFE] dark:bg-[#0A1815] text-[#3D4D42] dark:text-[#B5C4BA]'
                               } ${
                                 cell.align === 'right'
                                   ? 'text-right font-mono'
@@ -525,7 +525,7 @@ export function PracticeMode({
                   </tbody>
                 </table>
               </div>
-              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-2 text-xs text-[#5E7064] dark:text-[#8A9A8F]">
                 Mendukung pemisah argumen koma <code className="font-mono">(,)</code> maupun titik koma <code className="font-mono">(;)</code>. Tekan Enter atau klik Periksa Jawaban.
               </p>
             </div>
@@ -538,7 +538,7 @@ export function PracticeMode({
                   whileHover={{ y: -1 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={handleCheck}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 px-4 py-2 text-xs font-semibold text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#A2DF20] hover:bg-[#93CE18] px-5 py-2 text-xs font-bold text-[#07170B] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Periksa Jawaban</span>
@@ -549,7 +549,7 @@ export function PracticeMode({
                   onClick={() =>
                     setShowHint((prev) => ({ ...prev, [qId]: !prev[qId] }))
                   }
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap shrink-0 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-4 py-2 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] whitespace-nowrap shrink-0 cursor-pointer transition-colors"
                 >
                   <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>{isHintVisible ? 'Tutup Petunjuk' : 'Petunjuk'}</span>
@@ -559,7 +559,7 @@ export function PracticeMode({
                   <button
                     type="button"
                     onClick={handleRevealAnswer}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap shrink-0 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-4 py-2 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] whitespace-nowrap shrink-0 cursor-pointer transition-colors"
                   >
                     <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Lihat Jawaban</span>
@@ -571,7 +571,7 @@ export function PracticeMode({
                 type="button"
                 whileTap={{ scale: 0.97 }}
                 onClick={handleNext}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-700 whitespace-nowrap shrink-0 cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-4 py-2 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] whitespace-nowrap shrink-0 cursor-pointer transition-colors"
               >
                 <span>
                   {currentIdx < questions.length - 1
@@ -587,9 +587,9 @@ export function PracticeMode({
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.16 }}
-                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 p-4 text-xs sm:text-sm text-slate-700 dark:text-slate-300"
+                className="rounded-xl bg-[#EAF2EC]/75 dark:bg-[#041006] p-4 text-xs sm:text-sm text-[#3D4D42] dark:text-[#B5C4BA]"
               >
-                <span className="font-semibold text-slate-900 dark:text-white">
+                <span className="font-bold text-[#07170B] dark:text-[#FEFEFE]">
                   Petunjuk:
                 </span>{' '}
                 {currentQuestion.hint}
@@ -601,16 +601,16 @@ export function PracticeMode({
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.18 }}
-                className={`rounded-lg border p-4 ${
+                className={`rounded-xl p-4 ${
                   result.isCorrect
-                    ? 'border-emerald-200 dark:border-emerald-900/70 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-100'
-                    : 'border-red-200 dark:border-red-900/70 bg-red-50/70 dark:bg-red-950/40 text-red-950 dark:text-red-100'
+                    ? 'bg-[#EAF2EC]/90 dark:bg-[#0F2418] text-[#07170B] dark:text-[#EAF2EC]'
+                    : 'bg-red-50/90 dark:bg-red-950/40 text-red-950 dark:text-red-100'
                 }`}
               >
                 <div className="flex items-start gap-2.5">
                   {result.isCorrect ? (
                     <CheckCircle2
-                      className="h-4 w-4 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5"
+                      className="h-4 w-4 text-[#008120] dark:text-[#A2DF20] shrink-0 mt-0.5"
                       aria-hidden="true"
                     />
                   ) : (
@@ -623,7 +623,7 @@ export function PracticeMode({
                     <p className="font-semibold">
                       {result.message}
                       {mode === 'challenge' && result.isCorrect && (
-                        <span className="ml-1.5 font-normal text-emerald-800 dark:text-emerald-300">
+                        <span className="ml-1.5 font-normal text-[#008120] dark:text-[#A2DF20]">
                           (Rumus: {currentQuestion.formulaName})
                         </span>
                       )}
