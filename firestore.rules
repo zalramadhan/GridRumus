@@ -31,6 +31,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'rizaldyramadhan@gmail.com'
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
     function isValidUserProfile(data, userId) {
       return data.keys().hasAll(['uid', 'displayName', 'email', 'createdAt', 'updatedAt'])
         && data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'createdAt', 'updatedAt'])
@@ -63,6 +70,66 @@ service cloud.firestore {
         && data.challengeHistory.size() <= 10
         && (data.challengeHistory.size() == 0 || data.challengeHistory[0] is map)
         && data.updatedAt is timestamp;
+    }
+
+    function isValidPromoBannerConfig(data) {
+      return data.keys().hasAll(['isActive', 'highlightText', 'title', 'subtitle', 'ctaLabel', 'affiliateUrl', 'updatedByUid', 'updatedAt'])
+        && data.keys().hasOnly(['isActive', 'highlightText', 'title', 'subtitle', 'ctaLabel', 'affiliateUrl', 'bannerImageUrl', 'updatedByUid', 'updatedAt'])
+        && data.isActive is bool
+        && data.highlightText is string
+        && data.highlightText.size() >= 1
+        && data.highlightText.size() <= 40
+        && data.title is string
+        && data.title.size() >= 1
+        && data.title.size() <= 80
+        && data.subtitle is string
+        && data.subtitle.size() >= 1
+        && data.subtitle.size() <= 200
+        && data.ctaLabel is string
+        && data.ctaLabel.size() >= 1
+        && data.ctaLabel.size() <= 40
+        && data.affiliateUrl is string
+        && data.affiliateUrl.size() >= 8
+        && data.affiliateUrl.size() <= 500
+        && data.affiliateUrl.matches('^https://.+')
+        && (!('bannerImageUrl' in data) || (
+          data.bannerImageUrl is string
+          && data.bannerImageUrl.size() <= 500
+          && (
+            data.bannerImageUrl.size() == 0
+            || data.bannerImageUrl.matches('^https://.+')
+            || data.bannerImageUrl.matches('^/(src/)?assets/.+')
+          )
+        ))
+        && data.updatedByUid is string
+        && data.updatedByUid == request.auth.uid
+        && isValidId(data.updatedByUid)
+        && data.updatedAt is timestamp;
+    }
+
+    match /admins/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list, create, update, delete: if false;
+    }
+
+    match /promotions/{promoId} {
+      allow get: if isValidId(promoId) && promoId == 'shopee_popup';
+      allow list: if false;
+
+      allow create: if isValidId(promoId)
+        && promoId == 'shopee_popup'
+        && isAdmin()
+        && isValidPromoBannerConfig(incoming())
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(promoId)
+        && promoId == 'shopee_popup'
+        && isAdmin()
+        && isValidPromoBannerConfig(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['isActive', 'highlightText', 'title', 'subtitle', 'ctaLabel', 'affiliateUrl', 'bannerImageUrl', 'updatedByUid', 'updatedAt']);
+
+      allow delete: if false;
     }
 
     match /users/{userId} {

@@ -6,6 +6,7 @@ import {
   FolderDown,
   LogIn,
   LogOut,
+  Megaphone,
   Moon,
   Sun,
   Table2,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
+import { usePromoConfig } from '../hooks/usePromoConfig';
 import { downloadPracticePack } from '../utils/xlsxGenerator';
 
 interface TopBarProps {
@@ -24,6 +26,7 @@ interface TopBarProps {
 export function TopBar({ theme, onSetTheme }: TopBarProps) {
   const [downloaded, setDownloaded] = useState(false);
   const { user, openLoginModal, requireAuth, signOutUser } = useAuth();
+  const { isAdmin, openAdminModal } = usePromoConfig();
 
   const handleDownloadMaster = () => {
     requireAuth('download', () => {
@@ -167,6 +170,19 @@ export function TopBar({ theme, onSetTheme }: TopBarProps) {
               <span className="hidden md:inline max-w-[96px] truncate text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] px-1">
                 {firstName}
               </span>
+              {isAdmin && (
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.95 }}
+                  onClick={openAdminModal}
+                  aria-label="Kelola popup iklan Shopee"
+                  title="Kelola Popup Iklan Shopee"
+                  className="inline-flex items-center gap-1 rounded-full bg-[#EE4D2D] hover:bg-[#D93E1F] px-2.5 py-1 text-[11px] font-bold text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <Megaphone className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  <span className="hidden sm:inline">Iklan</span>
+                </motion.button>
+              )}
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.94 }}

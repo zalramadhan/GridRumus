@@ -18,8 +18,11 @@ import { PracticeArena } from './components/PracticeArena';
 import { TipsSection } from './components/TipsSection';
 import { DownloadCenter } from './components/DownloadCenter';
 import { LoginModal } from './components/LoginModal';
+import { ShopeePromoPopup } from './components/ShopeePromoPopup';
+import { PromoAdminModal } from './components/PromoAdminModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { PromoConfigProvider } from './hooks/usePromoConfig';
 import { PracticeProgressProvider } from './hooks/usePracticeProgress';
 import { FORMULAS } from './data/formulas';
 import { PRACTICE_PACKS, TIPS } from './data/tips';
@@ -56,6 +59,8 @@ function AppShell() {
       <HandCursorEffect />
       <TopBar theme={theme} onSetTheme={setTheme} />
       <LoginModal />
+      <ShopeePromoPopup />
+      <PromoAdminModal />
 
           <main className="flex-1">
             {/* Hero Section with Magnetic Dot Grid */}
@@ -330,9 +335,11 @@ export default function App() {
     <ErrorBoundary>
       <MotionConfig reducedMotion="user">
         <AuthProvider>
-          <PracticeProgressProvider>
-            <AppShell />
-          </PracticeProgressProvider>
+          <PromoConfigProvider>
+            <PracticeProgressProvider>
+              <AppShell />
+            </PracticeProgressProvider>
+          </PromoConfigProvider>
         </AuthProvider>
       </MotionConfig>
     </ErrorBoundary>

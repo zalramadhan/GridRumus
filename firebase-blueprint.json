@@ -72,6 +72,93 @@
         }
       },
       "required": ["userId", "solvedQuestionIds", "formulaBestScores", "challengeHistory", "updatedAt"]
+    },
+    "PromoBannerConfig": {
+      "title": "PromoBannerConfig",
+      "description": "Shopee Affiliate arrival promo popup configuration managed by verified admins.",
+      "type": "object",
+      "properties": {
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the arrival promo popup is shown on page load."
+        },
+        "highlightText": {
+          "type": "string",
+          "description": "Short kicker text above the promo headline.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "title": {
+          "type": "string",
+          "description": "Main promo headline shown inside the popup.",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Supporting promotional description text.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "ctaLabel": {
+          "type": "string",
+          "description": "Primary call-to-action button label.",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "affiliateUrl": {
+          "type": "string",
+          "description": "Shopee Affiliate destination URL (must start with https://).",
+          "minLength": 8,
+          "maxLength": 500,
+          "pattern": "^https://.+"
+        },
+        "bannerImageUrl": {
+          "type": "string",
+          "description": "Optional custom HTTPS banner image URL or blank to use built-in generated banner.",
+          "maxLength": 500
+        },
+        "updatedByUid": {
+          "type": "string",
+          "description": "UID of the verified admin who last updated the promo.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last promo update."
+        }
+      },
+      "required": [
+        "isActive",
+        "highlightText",
+        "title",
+        "subtitle",
+        "ctaLabel",
+        "affiliateUrl",
+        "updatedByUid",
+        "updatedAt"
+      ]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Optional delegated admin marker document keyed by Firebase Auth UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Admin Firebase Auth UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when admin access was provisioned."
+        }
+      },
+      "required": ["uid", "createdAt"]
     }
   },
   "firestore": {
@@ -86,6 +173,18 @@
         "$ref": "#/entities/PracticeProgress"
       },
       "description": "User practice progress documents owned by {userId}."
+    },
+    "/promotions/{promoId}": {
+      "schema": {
+        "$ref": "#/entities/PromoBannerConfig"
+      },
+      "description": "Publicly readable promo banner config (`shopee_popup`) editable only by verified admins."
+    },
+    "/admins/{userId}": {
+      "schema": {
+        "$ref": "#/entities/AdminRecord"
+      },
+      "description": "Server-provisioned admin records."
     }
   }
 }
