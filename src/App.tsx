@@ -5,15 +5,17 @@ import {
   Download,
   FileSpreadsheet,
   Keyboard,
-  Layers,
   Moon,
+  Play,
   Sun,
 } from 'lucide-react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { TopBar } from './components/TopBar';
 import { FormulaExplorer } from './components/FormulaExplorer';
+import { PracticeArena } from './components/PracticeArena';
 import { TipsSection } from './components/TipsSection';
 import { DownloadCenter } from './components/DownloadCenter';
+import { PracticeProgressProvider } from './hooks/usePracticeProgress';
 import { FORMULAS } from './data/formulas';
 import { PRACTICE_PACKS, TIPS } from './data/tips';
 import { downloadPracticePack } from './utils/xlsxGenerator';
@@ -46,10 +48,11 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div
-        id="beranda"
-        className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200"
-      >
+      <PracticeProgressProvider>
+        <div
+          id="beranda"
+          className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200"
+        >
         <TopBar />
 
         <main className="flex-1">
@@ -244,16 +247,16 @@ export default function App() {
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <Layers
+                  <Play
                     className="h-5 w-5 text-emerald-700 dark:text-emerald-400 mt-0.5 shrink-0"
                     aria-hidden="true"
                   />
                   <div>
                     <div className="font-display text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
-                      6
+                      {FORMULAS.length * 5}
                     </div>
                     <div className="mt-0.5 text-xs text-slate-600 dark:text-slate-400">
-                      Kategori Bisnis &amp; Analisis Data
+                      Soal Praktek Langsung (5 per Rumus)
                     </div>
                   </div>
                 </div>
@@ -292,6 +295,7 @@ export default function App() {
           </section>
 
           <FormulaExplorer />
+          <PracticeArena />
           <TipsSection />
           <DownloadCenter />
         </main>
@@ -314,6 +318,12 @@ export default function App() {
                 className="hover:text-slate-900 dark:hover:text-white transition-colors"
               >
                 Katalog Rumus
+              </a>
+              <a
+                href="#latihan-soal"
+                className="hover:text-slate-900 dark:hover:text-white transition-colors"
+              >
+                Latihan Soal
               </a>
               <a
                 href="#trik-shortcut"
@@ -364,6 +374,7 @@ export default function App() {
           </div>
         </footer>
       </div>
+      </PracticeProgressProvider>
     </MotionConfig>
   );
 }

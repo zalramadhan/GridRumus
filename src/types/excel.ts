@@ -89,3 +89,49 @@ export interface PracticePack {
   formulasIncluded: string[];
   targetRole: string;
 }
+
+export interface PracticeCell {
+  value: string | number;
+  isHeader?: boolean;
+  isTarget?: boolean;
+  align?: 'left' | 'right' | 'center';
+}
+
+export interface PracticeRow {
+  rowNum: number;
+  cells: Record<string, PracticeCell>;
+}
+
+export interface PracticeQuestion {
+  id: string;
+  title: string;
+  instruction: string;
+  columns: string[];
+  rows: PracticeRow[];
+  targetCell: string;
+  expectedResult: string | number;
+  acceptedFormulas: string[];
+  hint: string;
+  explanation: string;
+}
+
+export interface PracticeRunnerQuestion extends PracticeQuestion {
+  formulaId: string;
+  formulaName: string;
+  category: Exclude<FormulaCategory, 'Semua'>;
+}
+
+export interface ChallengeHistoryEntry {
+  id: string;
+  completedAt: string;
+  categoryLabel: string;
+  correctCount: number;
+  totalCount: number;
+}
+
+export interface PracticeProgressState {
+  version: number;
+  solvedQuestionIds: string[];
+  formulaBestScores: Record<string, number>;
+  challengeHistory: ChallengeHistoryEntry[];
+}

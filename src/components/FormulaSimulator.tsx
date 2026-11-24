@@ -7,13 +7,17 @@ import {
   Download,
   Lightbulb,
   ListChecks,
+  Play,
   RotateCcw,
   SlidersHorizontal,
   Table2,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { FormulaEntry, GridCell } from '../types/excel';
+import { PRACTICE_QUESTIONS_BY_FORMULA } from '../data/practice';
+import { usePracticeProgress } from '../hooks/usePracticeProgress';
+import { FormulaEntry, GridCell, PracticeRunnerQuestion } from '../types/excel';
 import { downloadFormulaWorkbook } from '../utils/xlsxGenerator';
+import { PracticeMode } from './PracticeMode';
 
 interface FormulaSimulatorProps {
   formula: FormulaEntry;
@@ -35,12 +39,34 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
   const [useSemicolon, setUseSemicolon] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [downloaded, setDownloaded] = useState<boolean>(false);
+  const [practiceActive, setPracticeActive] = useState<boolean>(false);
+
+  const { getFormulaSolvedCount } = usePracticeProgress();
+
+  const practiceQuestions = useMemo(
+    () => PRACTICE_QUESTIONS_BY_FORMULA[formula.id] ?? [],
+    [formula.id]
+  );
+
+  const runnerQuestions = useMemo<PracticeRunnerQuestion[]>(
+    () =>
+      practiceQuestions.map((q) => ({
+        ...q,
+        formulaId: formula.id,
+        formulaName: formula.name,
+        category: formula.category,
+      })),
+    [practiceQuestions, formula.id, formula.name, formula.category]
+  );
+
+  const solvedCount = getFormulaSolvedCount(formula.id);
 
   useEffect(() => {
     setOverrides({});
     setActiveCell(formula.worksheet.defaultActiveCell);
     setCopied(false);
     setDownloaded(false);
+    setPracticeActive(false);
   }, [formula]);
 
   const getVal = useMemo(() => {
@@ -122,6 +148,23 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
 
   const hasEdits = Object.keys(overrides).length > 0;
 
+  if (practiceActive && runnerQuestions.length > 0) {
+    return (
+      <div id="simulator-grid">
+        <PracticeMode
+          sessionKey={`sim-${formula.id}`}
+          mode="formula"
+          title={`Latihan ${formula.name}`}
+          subtitle={`Latihan Praktek Langsung · ${formula.name}`}
+          formulaIdForScore={formula.id}
+          questions={runnerQuestions}
+          exitLabel="Kembali ke Simulator"
+          onExit={() => setPracticeActive(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
@@ -143,6 +186,14 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
                 <span>Tingkat {formula.level}</span>
                 <span aria-hidden="true">·</span>
                 <span>{formula.excelVersion}</span>
+                {practiceQuestions.length > 0 && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="font-medium text-emerald-800 dark:text-emerald-400 tabular-nums">
+                      Latihan: {solvedCount}/{practiceQuestions.length} selesai
+                    </span>
+                  </>
+                )}
               </div>
               <h3 className="font-display text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                 {formula.name}
@@ -195,20 +246,34 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                 onClick={handleDownloadSample}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 px-4 py-2 text-xs font-semibold text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 dark:focus-visible:outline-emerald-400"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/70 px-3.5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100 transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 dark:focus-visible:outline-emerald-400"
               >
                 {downloaded ? (
                   <>
-                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                    <Check className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                     <span>File Terunduh (.xlsx)</span>
                   </>
                 ) : (
                   <>
-                    <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                    <Download className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                     <span>Unduh Contoh (.xlsx)</span>
                   </>
                 )}
               </motion.button>
+
+              {practiceQuestions.length > 0 && (
+                <motion.button
+                  type="button"
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                  onClick={() => setPracticeActive(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-500 px-4 py-2 text-xs font-semibold text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700 dark:focus-visible:outline-emerald-400"
+                >
+                  <Play className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Mulai Latihan ({practiceQuestions.length} Soal)</span>
+                </motion.button>
+              )}
             </div>
           </div>
 

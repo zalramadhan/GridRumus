@@ -42,6 +42,12 @@ export function TopBar() {
             Simulasi Grid
           </a>
           <a
+            href="#latihan-soal"
+            className="hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0 py-1"
+          >
+            Latihan Soal
+          </a>
+          <a
             href="#trik-shortcut"
             className="hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap shrink-0 py-1"
           >
