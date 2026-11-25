@@ -17,7 +17,10 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { FORMULAS } from '../data/formulas';
-import { PRACTICE_QUESTIONS_BY_FORMULA } from '../data/practice';
+import {
+  JOB_PRACTICE_ROLES,
+  PRACTICE_QUESTIONS_BY_FORMULA,
+} from '../data/practice';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { ChallengeHistoryEntry, PracticeProgressState } from '../types/excel';
 import { useAuth } from './useAuth';
@@ -64,8 +67,10 @@ interface PracticeProgressContextValue {
   totalQuestionsCount: number;
   solvedTotalCount: number;
   completedFormulasCount: number;
+  completedJobsCount: number;
   bestChallengePercent: number;
   getFormulaSolvedCount: (formulaId: string) => number;
+  getJobSolvedCount: (jobId: string) => number;
   recordQuestionSolved: (questionId: string, formulaId: string) => void;
   recordFormulaSessionScore: (formulaId: string, score: number) => void;
   recordChallengeSession: (
@@ -163,7 +168,10 @@ export function PracticeProgressProvider({ children }: { children: ReactNode }) 
         ? prev.solvedQuestionIds
         : [...prev.solvedQuestionIds, questionId].slice(0, 200);
 
-      const formulaQs = PRACTICE_QUESTIONS_BY_FORMULA[formulaId] ?? [];
+      const formulaQs =
+        PRACTICE_QUESTIONS_BY_FORMULA[formulaId] ??
+        JOB_PRACTICE_ROLES.find((j) => j.id === formulaId)?.questions ??
+        [];
       const solvedForFormula = formulaQs.filter((q) => nextSolved.includes(q.id)).length;
       const prevBest = prev.formulaBestScores[formulaId] ?? 0;
 
@@ -243,10 +251,15 @@ export function PracticeProgressProvider({ children }: { children: ReactNode }) 
   }, [user]);
 
   const value = useMemo<PracticeProgressContextValue>(() => {
-    const totalQuestionsCount = FORMULAS.reduce(
+    const formulaQuestionsTotal = FORMULAS.reduce(
       (sum, f) => sum + (PRACTICE_QUESTIONS_BY_FORMULA[f.id]?.length ?? 0),
       0
     );
+    const jobQuestionsTotal = JOB_PRACTICE_ROLES.reduce(
+      (sum, job) => sum + job.questions.length,
+      0
+    );
+    const totalQuestionsCount = formulaQuestionsTotal + jobQuestionsTotal;
 
     const solvedSet = new Set(progress.solvedQuestionIds);
     const solvedTotalCount = solvedSet.size;
@@ -257,9 +270,19 @@ export function PracticeProgressProvider({ children }: { children: ReactNode }) 
       return Math.max(solvedNow, progress.formulaBestScores[formulaId] ?? 0);
     };
 
+    const getJobSolvedCount = (jobId: string) => {
+      const qs = JOB_PRACTICE_ROLES.find((j) => j.id === jobId)?.questions ?? [];
+      const solvedNow = qs.filter((q) => solvedSet.has(q.id)).length;
+      return Math.max(solvedNow, progress.formulaBestScores[jobId] ?? 0);
+    };
+
     const completedFormulasCount = FORMULAS.filter((f) => {
       const total = PRACTICE_QUESTIONS_BY_FORMULA[f.id]?.length ?? 5;
       return getFormulaSolvedCount(f.id) >= total;
+    }).length;
+
+    const completedJobsCount = JOB_PRACTICE_ROLES.filter((job) => {
+      return getJobSolvedCount(job.id) >= job.questions.length;
     }).length;
 
     const bestChallengePercent = progress.challengeHistory.reduce((best, item) => {
@@ -273,8 +296,10 @@ export function PracticeProgressProvider({ children }: { children: ReactNode }) 
       totalQuestionsCount,
       solvedTotalCount,
       completedFormulasCount,
+      completedJobsCount,
       bestChallengePercent,
       getFormulaSolvedCount,
+      getJobSolvedCount,
       recordQuestionSolved,
       recordFormulaSessionScore,
       recordChallengeSession,

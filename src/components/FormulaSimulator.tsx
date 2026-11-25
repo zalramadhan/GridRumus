@@ -187,7 +187,7 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
         className="bg-[#FEFEFE] dark:bg-[#0A1815] rounded-2xl overflow-hidden transition-colors duration-200"
       >
         {/* Header Rumus */}
-        <div className="px-6 py-6 dark:bg-[#002100]">
+        <div className="px-4 py-5 sm:px-6 sm:py-6 dark:bg-[#002100]">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 text-xs text-[#5E7064] dark:text-[#8A9A8F] mb-1.5">
@@ -213,13 +213,13 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
               <motion.button
                 type="button"
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.12 }}
                 onClick={handleCopySyntax}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-4 py-2 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] transition-colors whitespace-nowrap shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#008120] dark:focus-visible:outline-[#A2DF20]"
+                className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-3.5 sm:px-4 py-2 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] transition-colors whitespace-nowrap cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#008120] dark:focus-visible:outline-[#A2DF20]"
               >
                 <AnimatePresence mode="wait" initial={false}>
                   {copied ? (
@@ -305,24 +305,24 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
 
           {/* Sintaks + Pengalih Pemisah Koma/Titik Koma */}
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 min-w-0 max-w-full">
               <span className="text-xs font-medium text-[#5E7064] dark:text-[#8A9A8F] shrink-0">
                 Sintaks:
               </span>
-              <code className="font-mono text-xs sm:text-sm font-medium text-[#07170B] dark:text-[#A2DF20] bg-[#EAF2EC] dark:bg-[#041006] rounded-lg px-3 py-1.5 overflow-x-auto">
+              <code className="block max-w-full font-mono text-xs sm:text-sm font-medium text-[#07170B] dark:text-[#A2DF20] bg-[#EAF2EC] dark:bg-[#041006] rounded-lg px-3 py-1.5 overflow-x-auto whitespace-nowrap">
                 {syntaxText}
               </code>
             </div>
 
             <div
-              className="inline-flex items-center rounded-full bg-[#EAF2EC] dark:bg-[#041006] p-1 self-start shrink-0"
+              className="inline-flex max-w-full flex-wrap sm:flex-nowrap items-center rounded-2xl sm:rounded-full bg-[#EAF2EC] dark:bg-[#041006] p-1 self-start shrink-0"
               role="group"
               aria-label="Pilih pemisah argumen Excel"
             >
               <button
                 type="button"
                 onClick={() => setUseSemicolon(false)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`rounded-full px-2.5 sm:px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   !useSemicolon
                     ? 'bg-[#07170B] text-[#FEFEFE] dark:bg-[#A2DF20] dark:text-[#07170B]'
                     : 'text-[#3D4D42] dark:text-[#B5C4BA] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
@@ -333,7 +333,7 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
               <button
                 type="button"
                 onClick={() => setUseSemicolon(true)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`rounded-full px-2.5 sm:px-3 py-1 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   useSemicolon
                     ? 'bg-[#07170B] text-[#FEFEFE] dark:bg-[#A2DF20] dark:text-[#07170B]'
                     : 'text-[#3D4D42] dark:text-[#B5C4BA] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
@@ -346,7 +346,7 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
         </div>
 
         {/* Simulator Spreadsheet Interaktif */}
-        <div className="px-6 py-5 bg-[#EAF2EC]/45 dark:bg-[#001000]">
+        <div className="px-4 sm:px-6 py-5 bg-[#EAF2EC]/45 dark:bg-[#001000]">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <div className="flex items-start gap-2.5">
               <Table2
@@ -535,7 +535,7 @@ export function FormulaSimulator({ formula }: FormulaSimulatorProps) {
         </div>
 
         {/* Penjelasan Praktis & Argumen */}
-        <div className="p-6 space-y-7 dark:bg-[#001f00]">
+        <div className="p-4 sm:p-6 space-y-7 dark:bg-[#001f00]">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
               <h4 className="inline-flex items-center gap-2 text-sm font-bold text-[#07170B] dark:text-[#FEFEFE] mb-2">

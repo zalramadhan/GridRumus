@@ -26,11 +26,11 @@ export function TipsSection() {
       id="trik-shortcut"
       className="py-16 bg-[#FEFEFE] dark:bg-[#002b05] transition-colors duration-200"
     >
-      <div className="mx-auto max-w-[1320px] px-6">
+      <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-7">
-          <div>
+          <div className="min-w-0">
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#008120] dark:text-[#A2DF20] mb-1.5">
-              <Zap className="h-4 w-4" aria-hidden="true" />
+              <Zap className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span>Efisiensi &amp; Pintasan</span>
             </div>
             <h2 className="font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#07170B] dark:text-[#FEFEFE]">
@@ -45,14 +45,14 @@ export function TipsSection() {
           </div>
 
           <div
-            className="inline-flex items-center rounded-full bg-[#EAF2EC] dark:bg-[#001a04] p-1 self-start shrink-0"
+            className="inline-flex max-w-full flex-wrap sm:flex-nowrap items-center rounded-2xl sm:rounded-full bg-[#EAF2EC] dark:bg-[#001a04] p-1 self-start shrink-0"
             role="group"
             aria-label="Pilih sistem operasi shortcut"
           >
             <button
               type="button"
               onClick={() => setOsMode('win')}
-              className={`relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`relative inline-flex items-center gap-1.5 rounded-full px-3 sm:px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 osMode === 'win'
                   ? 'text-[#FEFEFE] dark:text-[#07170B]'
                   : 'text-[#3D4D42] dark:text-[#B5C4BA] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
@@ -71,7 +71,7 @@ export function TipsSection() {
             <button
               type="button"
               onClick={() => setOsMode('mac')}
-              className={`relative inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              className={`relative inline-flex items-center gap-1.5 rounded-full px-3 sm:px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 osMode === 'mac'
                   ? 'text-[#FEFEFE] dark:text-[#07170B]'
                   : 'text-[#3D4D42] dark:text-[#B5C4BA] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
@@ -133,14 +133,14 @@ export function TipsSection() {
                 exit={{ opacity: 0, scale: 0.97 }}
                 whileHover={{ y: -2 }}
                 transition={{ duration: 0.17, ease: [0.16, 1, 0.3, 1] }}
-                className="group flex flex-col justify-between rounded-2xl bg-[#F5F6F6] dark:bg-[#021302] p-6 transition-colors duration-200"
+                className="group min-w-0 flex flex-col justify-between rounded-2xl bg-[#F5F6F6] dark:bg-[#021302] p-5 sm:p-6 transition-colors duration-200"
               >
-                <div>
-                  <div className="flex items-center justify-between gap-3 text-xs text-[#5E7064] dark:text-[#8A9A8F] mb-2.5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#5E7064] dark:text-[#8A9A8F] mb-2.5">
                     <span>{tip.category}</span>
-                    <kbd className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-[#07170B] dark:text-[#FEFEFE] bg-[#FEFEFE] dark:bg-[#041006] rounded-md px-2.5 py-1 whitespace-nowrap shrink-0 transition-transform duration-150 group-hover:scale-[1.04]">
-                      <Keyboard className="h-3 w-3 text-[#008120] dark:text-[#A2DF20]" aria-hidden="true" />
-                      <span>{osMode === 'win' ? tip.shortcutWin : tip.shortcutMac}</span>
+                    <kbd className="inline-flex max-w-full items-center gap-1.5 font-mono text-[11px] font-semibold text-[#07170B] dark:text-[#FEFEFE] bg-[#FEFEFE] dark:bg-[#041006] rounded-md px-2.5 py-1 whitespace-nowrap shrink-0 transition-transform duration-150 group-hover:scale-[1.04]">
+                      <Keyboard className="h-3 w-3 text-[#008120] dark:text-[#A2DF20] shrink-0" aria-hidden="true" />
+                      <span className="truncate">{osMode === 'win' ? tip.shortcutWin : tip.shortcutMac}</span>
                     </kbd>
                   </div>
 

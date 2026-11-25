@@ -17,11 +17,12 @@
     --arivexa-offwhite: #f5f6f6;
   }
 
-  html {
+  html, body {
     font-family: var(--font-body);
     scroll-behavior: smooth;
     color: #07170b;
     background-color: #fefefe;
+    overflow-x: clip;
   }
 
   html.dark {

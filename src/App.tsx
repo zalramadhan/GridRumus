@@ -18,13 +18,16 @@ import { PracticeArena } from './components/PracticeArena';
 import { TipsSection } from './components/TipsSection';
 import { DownloadCenter } from './components/DownloadCenter';
 import { LoginModal } from './components/LoginModal';
+import { PaywallModal } from './components/PaywallModal';
 import { ShopeePromoPopup } from './components/ShopeePromoPopup';
 import { PromoAdminModal } from './components/PromoAdminModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './hooks/useAuth';
+import { PaidPassProvider } from './hooks/usePaidPass';
 import { PromoConfigProvider } from './hooks/usePromoConfig';
 import { PracticeProgressProvider } from './hooks/usePracticeProgress';
 import { FORMULAS } from './data/formulas';
+import { JOB_PRACTICE_ROLES } from './data/practice';
 import { PRACTICE_PACKS, TIPS } from './data/tips';
 import { downloadPracticePack } from './utils/xlsxGenerator';
 
@@ -59,42 +62,39 @@ function AppShell() {
       <HandCursorEffect />
       <TopBar theme={theme} onSetTheme={setTheme} />
       <LoginModal />
+      <PaywallModal />
       <ShopeePromoPopup />
       <PromoAdminModal />
 
-          <main className="flex-1">
+          <main className="flex-1 overflow-x-clip">
             {/* Hero Section with Magnetic Dot Grid */}
             <section className="relative overflow-hidden bg-[#FEFEFE] dark:bg-[#041006] py-10 lg:py-16 transition-colors duration-200">
               <MagneticDotGrid theme={theme} />
-              <div className="relative z-10 mx-auto max-w-[1320px] px-6">
-                <p className="mb-5 text-xs font-medium text-[#008120] dark:text-[#A2DF20]">
-                  Referensi Kerja Spreadsheet · Simulator Rumus · File Latihan .xlsx
-                </p>
-
-                <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
-                  <div className="flex flex-col justify-center">
-                    <h1 className="font-display text-3xl sm:text-4xl lg:text-[3rem] font-extrabold tracking-tight text-[#07170B] dark:text-[#FEFEFE] leading-[1.12] text-balance max-w-2xl">
+              <div className="relative z-10 mx-auto max-w-[1320px] px-4 sm:px-6">
+                <div className="grid grid-cols-1 gap-8 sm:gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
+                  <div className="flex flex-col justify-center min-w-0">
+                    <h1 className="font-display text-[2.35rem] leading-[1.1] sm:text-[2.75rem] lg:text-[3.1rem] font-extrabold tracking-tight text-[#07170B] dark:text-[#FEFEFE] text-center sm:text-left text-balance mx-auto sm:mx-0 max-w-2xl break-words">
                       Kuasai Rumus &amp; Trik Excel dengan{' '}
                       <span className="text-[#008120] dark:text-[#A2DF20]">
                         Penjelasan Praktis dan Contoh Siap Pakai
                       </span>
                     </h1>
 
-                    <p className="mt-5 text-base leading-relaxed text-[#3D4D42] dark:text-[#B5C4BA] dark:tracking-[0.01em] max-w-xl">
-                      Pelajari rumus paling penting di dunia kerja—mulai dari SUMIFS, IF bertingkat, VLOOKUP, XLOOKUP, DATEDIF, hingga FILTER—uji langsung pada grid interaktif, kerjakan 130 soal praktek, dan unduh file Excel (.xlsx) berumus aktif.
+                    <p className="mt-5 text-[15px] sm:text-base leading-relaxed text-[#3D4D42] dark:text-[#B5C4BA] dark:tracking-[0.01em] text-center sm:text-left mx-auto sm:mx-0 max-w-xl">
+                      Pelajari rumus paling penting di dunia kerja—mulai dari SUMIFS, IF bertingkat, VLOOKUP, XLOOKUP, DATEDIF, hingga FILTER—uji langsung pada grid interaktif, kerjakan {FORMULAS.length * 5 + JOB_PRACTICE_ROLES.reduce((s, j) => s + j.questions.length, 0)} soal praktek rumus &amp; profesi, dan unduh file Excel (.xlsx) berumus aktif.
                     </p>
 
-                    <div className="mt-8 flex flex-wrap items-center gap-3.5">
+                    <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
                       <motion.a
                         href="#katalog-rumus"
                         whileHover={{ y: -2 }}
                         whileTap={{ scale: 0.97 }}
                         transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                        className="group inline-flex items-center gap-2 rounded-full bg-[#A2DF20] hover:bg-[#93CE18] px-6 py-3 text-sm font-bold text-[#07170B] transition-colors whitespace-nowrap shrink-0"
+                        className="group inline-flex max-w-full items-center justify-center gap-2 rounded-full bg-[#A2DF20] hover:bg-[#93CE18] px-5 sm:px-6 py-3 text-sm font-bold text-[#07170B] transition-colors whitespace-nowrap"
                       >
                         <span>Jelajahi Rumus &amp; Simulator</span>
                         <ArrowDown
-                          className="h-4 w-4 transition-transform duration-150 group-hover:translate-y-0.5"
+                          className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover:translate-y-0.5"
                           aria-hidden="true"
                         />
                       </motion.a>
@@ -112,10 +112,10 @@ function AppShell() {
                             )
                           )
                         }
-                        className="group inline-flex items-center gap-2 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#0A1815] dark:hover:bg-[#11281B] px-6 py-3 text-sm font-semibold text-[#07170B] dark:text-[#FEFEFE] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                        className="group inline-flex max-w-full items-center justify-center gap-2 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#0A1815] dark:hover:bg-[#11281B] px-5 sm:px-6 py-3 text-sm font-semibold text-[#07170B] dark:text-[#FEFEFE] transition-colors whitespace-nowrap cursor-pointer"
                       >
                         <Download
-                          className="h-4 w-4 text-[#008120] dark:text-[#A2DF20] transition-transform duration-150 group-hover:-translate-y-0.5"
+                          className="h-4 w-4 shrink-0 text-[#008120] dark:text-[#A2DF20] transition-transform duration-150 group-hover:-translate-y-0.5"
                           aria-hidden="true"
                         />
                         <span>Unduh Semua Contoh (.xlsx)</span>
@@ -129,10 +129,10 @@ function AppShell() {
                     animate={{ opacity: 1, y: 0 }}
                     whileHover={{ y: -3 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="rounded-2xl bg-[#07170B] dark:bg-[#0A1815] p-6 text-[#F5F6F6] flex flex-col justify-between transition-colors duration-200"
+                    className="min-w-0 rounded-2xl bg-[#07170B] dark:bg-[#0A1815] p-4 sm:p-6 text-[#F5F6F6] flex flex-col justify-between transition-colors duration-200"
                   >
-                    <div>
-                      <div className="flex items-center justify-between pb-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pb-4">
                         <span className="inline-flex items-center gap-2 font-mono text-xs font-semibold text-[#EAF2EC]">
                           <FileSpreadsheet
                             className="h-4 w-4 text-[#A2DF20]"
@@ -145,7 +145,7 @@ function AppShell() {
                         </span>
                       </div>
 
-                      <div className="overflow-hidden rounded-xl bg-[#041006]">
+                      <div className="overflow-x-auto rounded-xl bg-[#041006]">
                         <table className="w-full border-collapse text-xs">
                           <thead>
                             <tr className="bg-[#0D2114] text-[#B5C4BA] font-mono">
@@ -234,10 +234,10 @@ function AppShell() {
                     />
                     <div>
                       <div className="font-display text-2xl font-extrabold text-[#07170B] dark:text-[#FEFEFE] tabular-nums">
-                        {FORMULAS.length * 5}
+                        {FORMULAS.length * 5 + JOB_PRACTICE_ROLES.reduce((s, j) => s + j.questions.length, 0)}
                       </div>
                       <div className="mt-0.5 text-xs text-[#3D4D42] dark:text-[#B5C4BA]">
-                        Soal Praktek Langsung (5 per Rumus)
+                        Soal Praktek Rumus &amp; 6 Profesi Kerja
                       </div>
                     </div>
                   </motion.div>
@@ -290,7 +290,7 @@ function AppShell() {
           </main>
 
           <footer className="bg-[#07170B] dark:bg-[#011608] text-[#B5C4BA] py-10 transition-colors duration-200">
-            <div className="mx-auto flex max-w-[1320px] flex-col gap-5 px-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mx-auto flex max-w-[1320px] flex-col gap-5 px-4 sm:px-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-xs">
                 <span className="font-display text-sm font-extrabold text-[#98ff00]">
                   GridRumus
@@ -335,11 +335,13 @@ export default function App() {
     <ErrorBoundary>
       <MotionConfig reducedMotion="user">
         <AuthProvider>
-          <PromoConfigProvider>
-            <PracticeProgressProvider>
-              <AppShell />
-            </PracticeProgressProvider>
-          </PromoConfigProvider>
+          <PaidPassProvider>
+            <PromoConfigProvider>
+              <PracticeProgressProvider>
+                <AppShell />
+              </PracticeProgressProvider>
+            </PromoConfigProvider>
+          </PaidPassProvider>
         </AuthProvider>
       </MotionConfig>
     </ErrorBoundary>

@@ -121,6 +121,15 @@ export interface PracticeRunnerQuestion extends PracticeQuestion {
   category: Exclude<FormulaCategory, 'Semua'>;
 }
 
+export interface JobPracticeRole {
+  id: string;
+  roleTitle: string;
+  department: string;
+  summary: string;
+  focusFormulas: string[];
+  questions: PracticeQuestion[];
+}
+
 export interface ChallengeHistoryEntry {
   id: string;
   completedAt: string;

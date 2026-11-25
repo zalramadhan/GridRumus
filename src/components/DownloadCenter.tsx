@@ -24,7 +24,7 @@ export function DownloadCenter() {
       id="file-latihan"
       className="py-16 bg-[#F5F6F6] dark:bg-[#011004] transition-colors duration-200"
     >
-      <div className="mx-auto max-w-[1320px] px-6">
+      <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
         <div className="max-w-2xl mb-8">
           <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#008120] dark:text-[#A2DF20] mb-1.5">
             <FolderDown className="h-4 w-4" aria-hidden="true" />
@@ -49,7 +49,7 @@ export function DownloadCenter() {
                 key={pack.id}
                 whileHover={{ y: -2 }}
                 transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-                className={`flex flex-col gap-4 rounded-2xl bg-[#FEFEFE] p-6 lg:flex-row lg:items-center lg:justify-between hover:bg-[#EAF2EC]/65 dark:hover:bg-[#0F2418] transition-colors ${
+                className={`flex flex-col gap-4 rounded-2xl bg-[#FEFEFE] p-4 sm:p-6 lg:flex-row lg:items-center lg:justify-between hover:bg-[#EAF2EC]/65 dark:hover:bg-[#0F2418] transition-colors ${
                   index % 2 === 0 ? 'dark:bg-[#00280a]' : 'dark:bg-[#001a04]'
                 }`}
               >
@@ -62,7 +62,7 @@ export function DownloadCenter() {
                     <span aria-hidden="true">·</span>
                     <span className="tabular-nums">{pack.sheetsCount} worksheet</span>
                     <span aria-hidden="true">·</span>
-                    <span className="font-mono text-[#3D4D42] dark:text-[#B5C4BA]">
+                    <span className="font-mono text-[#3D4D42] dark:text-[#B5C4BA] break-all sm:break-normal">
                       {pack.filename}
                     </span>
                   </div>
@@ -79,7 +79,7 @@ export function DownloadCenter() {
                     <span className="font-semibold text-[#07170B] dark:text-[#FEFEFE]">
                       Rumus di dalam file:
                     </span>
-                    <span className="font-mono text-[#008120] dark:text-[#A2DF20]">
+                    <span className="font-mono text-[#008120] dark:text-[#A2DF20] break-words">
                       {pack.formulasIncluded.join(' · ')}
                     </span>
                   </div>

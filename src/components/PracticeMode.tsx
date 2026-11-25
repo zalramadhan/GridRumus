@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Award,
+  Briefcase,
   CheckCircle2,
   Eye,
   HelpCircle,
@@ -18,7 +19,7 @@ import { validatePracticeFormula, ValidationResult } from '../utils/formulaValid
 
 interface PracticeModeProps {
   sessionKey: string;
-  mode: 'formula' | 'challenge';
+  mode: 'formula' | 'challenge' | 'job';
   title: string;
   subtitle: string;
   formulaIdForScore?: string;
@@ -81,7 +82,7 @@ export function PracticeMode({
   const finalizeSessionIfNeeded = (finalEarnedCount: number) => {
     if (sessionRecorded) return;
     setSessionRecorded(true);
-    if (mode === 'formula' && formulaIdForScore) {
+    if ((mode === 'formula' || mode === 'job') && formulaIdForScore) {
       recordFormulaSessionScore(formulaIdForScore, finalEarnedCount);
     } else if (mode === 'challenge' && challengeCategoryLabel) {
       recordChallengeSession(
@@ -102,7 +103,7 @@ export function PracticeMode({
 
     if (validation.isCorrect && !revealed[qId]) {
       recordQuestionSolved(qId, currentQuestion.formulaId);
-      if (mode === 'formula' && formulaIdForScore) {
+      if ((mode === 'formula' || mode === 'job') && formulaIdForScore) {
         const nextEarned = questions.filter(
           (q) => nextResults[q.id]?.isCorrect && !revealed[q.id]
         ).length;
@@ -160,22 +161,24 @@ export function PracticeMode({
   return (
     <div className="bg-[#FEFEFE] dark:bg-[#0A1815] rounded-2xl transition-colors duration-200 overflow-hidden">
       {/* Header Latihan */}
-      <div className="px-6 py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="px-4 sm:px-6 py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-xs text-[#008120] dark:text-[#A2DF20] font-semibold mb-1">
             {mode === 'challenge' ? (
-              <Shuffle className="h-3.5 w-3.5" aria-hidden="true" />
+              <Shuffle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            ) : mode === 'job' ? (
+              <Briefcase className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             ) : (
-              <Play className="h-3.5 w-3.5" aria-hidden="true" />
+              <Play className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             )}
-            <span>{subtitle}</span>
+            <span className="truncate">{subtitle}</span>
           </div>
-          <h3 className="font-display text-xl font-extrabold text-[#07170B] dark:text-[#FEFEFE]">
+          <h3 className="font-display text-lg sm:text-xl font-extrabold text-[#07170B] dark:text-[#FEFEFE]">
             {title} ({questions.length} Soal)
           </h3>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
           <span className="font-mono text-xs font-bold text-[#07170B] dark:text-[#A2DF20] tabular-nums">
             Benar: {earnedCorrectCount}/{questions.length}
           </span>
@@ -192,7 +195,7 @@ export function PracticeMode({
       </div>
 
       {/* Navigasi Nomor Soal */}
-      <div className="bg-[#EAF2EC]/55 dark:bg-[#041006]/70 px-6 py-3 flex items-center gap-2 overflow-x-auto">
+      <div className="bg-[#EAF2EC]/55 dark:bg-[#041006]/70 px-4 sm:px-6 py-3 flex items-center gap-2 overflow-x-auto">
         {questions.map((q, idx) => {
           const isCurrent = !showSummary && idx === currentIdx;
           const status = results[q.id];
@@ -248,7 +251,7 @@ export function PracticeMode({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="p-6 space-y-6"
+            className="p-4 sm:p-6 space-y-6"
           >
             <div className="rounded-2xl bg-[#EAF2EC]/65 dark:bg-[#041006] p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3.5">
@@ -323,7 +326,7 @@ export function PracticeMode({
                           · {q.formulaName}
                         </span>
                       </div>
-                      <p className="mt-1 text-xs text-[#5E7064] dark:text-[#8A9A8F] font-mono">
+                      <p className="mt-1 text-xs text-[#5E7064] dark:text-[#8A9A8F] font-mono break-all">
                         Jawaban baku: {q.acceptedFormulas[0]}
                       </p>
                     </div>
@@ -350,7 +353,7 @@ export function PracticeMode({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.17, ease: [0.16, 1, 0.3, 1] }}
-            className="p-6 space-y-5"
+            className="p-4 sm:p-6 space-y-5"
           >
             <div>
               <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[#5E7064] dark:text-[#8A9A8F] mb-1">
@@ -619,8 +622,8 @@ export function PracticeMode({
                       aria-hidden="true"
                     />
                   )}
-                  <div className="space-y-1 text-xs sm:text-sm">
-                    <p className="font-semibold">
+                  <div className="min-w-0 space-y-1 text-xs sm:text-sm">
+                    <p className="font-semibold break-words">
                       {result.message}
                       {mode === 'challenge' && result.isCorrect && (
                         <span className="ml-1.5 font-normal text-[#008120] dark:text-[#A2DF20]">
@@ -629,8 +632,8 @@ export function PracticeMode({
                       )}
                     </p>
                     {(result.isCorrect || isRevealed) && (
-                      <p className="leading-relaxed opacity-90">
-                        <span className="font-mono font-semibold">
+                      <p className="leading-relaxed opacity-90 break-words">
+                        <span className="font-mono font-semibold break-all">
                           {currentQuestion.acceptedFormulas[0]}
                         </span>{' '}
                         — {currentQuestion.explanation}

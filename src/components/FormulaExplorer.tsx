@@ -70,7 +70,7 @@ export function FormulaExplorer({ externalQuery = '' }: FormulaExplorerProps) {
       id="katalog-rumus"
       className="py-16 bg-[#F5F6F6] dark:bg-[#041006] transition-colors duration-200"
     >
-      <div className="mx-auto max-w-[1320px] px-6">
+      <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-7">
           <div>
             <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#008120] dark:text-[#A2DF20] mb-1.5">
@@ -116,7 +116,7 @@ export function FormulaExplorer({ externalQuery = '' }: FormulaExplorerProps) {
 
         {/* Filter Kategori */}
         <div
-          className="mb-7 flex items-center gap-2 overflow-x-auto pb-2"
+          className="mb-7 flex max-w-full items-center gap-2 overflow-x-auto pb-2"
           role="tablist"
           aria-label="Filter kategori rumus"
         >
@@ -131,7 +131,7 @@ export function FormulaExplorer({ externalQuery = '' }: FormulaExplorerProps) {
                 whileTap={{ scale: 0.97 }}
                 transition={{ duration: 0.12 }}
                 onClick={() => setSelectedCategory(label)}
-                className={`relative inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                className={`relative inline-flex items-center gap-1.5 rounded-full px-3.5 sm:px-4 py-2 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                   active
                     ? 'text-[#A2DF20] dark:text-[#07170B]'
                     : 'bg-[#FEFEFE] dark:bg-[#0A1815] text-[#3D4D42] dark:text-[#B5C4BA] hover:bg-[#EAF2EC]/80 dark:hover:bg-[#11281B] hover:text-[#07170B] dark:hover:text-[#FEFEFE]'
@@ -154,7 +154,7 @@ export function FormulaExplorer({ externalQuery = '' }: FormulaExplorerProps) {
         {/* Dua Zona: Daftar Rumus + Simulator */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[330px_1fr] items-start">
           {/* Sidebar Daftar Rumus */}
-          <aside className="rounded-2xl bg-[#FEFEFE] dark:bg-[#0A1815] overflow-hidden transition-colors duration-200">
+          <aside className="min-w-0 w-full rounded-2xl bg-[#FEFEFE] dark:bg-[#0A1815] overflow-hidden transition-colors duration-200">
             <div className="border-0 bg-[#EAF2EC]/75 dark:bg-[#003103] px-4 py-3.5 flex items-center justify-between">
               <span className="text-xs font-bold text-[#07170B] dark:text-[#FEFEFE]">
                 Daftar Rumus Tersedia
