@@ -6,6 +6,7 @@ import {
   Clock,
   Download,
   History,
+  LayoutDashboard,
   Lock,
   Play,
   RotateCcw,
@@ -33,6 +34,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { formatRemainingHoursMinutes, usePaidPass } from '../hooks/usePaidPass';
 import { usePracticeProgress } from '../hooks/usePracticeProgress';
+import { usePromoConfig } from '../hooks/usePromoConfig';
 import { FormulaCategory, PracticeRunnerQuestion } from '../types/excel';
 import { downloadCertificatePng, formatExamDuration } from '../utils/certificateGenerator';
 import { PracticeMode } from './PracticeMode';
@@ -93,6 +95,7 @@ type ActiveArenaSession =
 
 export function PracticeArena() {
   const { user, requireAuth } = useAuth();
+  const { isAdmin } = usePromoConfig();
   const {
     hasActivePass,
     remainingSeconds,
@@ -100,6 +103,7 @@ export function PracticeArena() {
     priceIdr,
     passDurationHours,
     openPaywall,
+    openTokenAdmin,
   } = usePaidPass();
   const {
     progress,
@@ -418,7 +422,7 @@ export function PracticeArena() {
           </motion.div>
         </div>
 
-        {/* Bilah Status Token Harian Mayar.id */}
+        {/* Bilah Status Token Harian WhatsApp */}
         <div
           className={`mb-7 rounded-2xl border p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between transition-colors ${
             hasActivePass
@@ -463,14 +467,24 @@ export function PracticeArena() {
                     Arena Latihan Memerlukan Token Harian · Rp{priceIdr.toLocaleString('id-ID')} / {passDurationHours} Jam
                   </div>
                   <p className="mt-0.5 text-xs text-[#3D4D42] dark:text-[#B5C4BA]">
-                    Satu kali pembayaran otomatis via QRIS / E-Wallet / VA di Mayar.id membuka seluruh 4 mode latihan selama {passDurationHours} jam penuh.
+                    Pesan Token Harian lewat chat WhatsApp Admin untuk membuka seluruh 4 mode latihan selama {passDurationHours} jam penuh.
                   </p>
                 </>
               )}
             </div>
           </div>
 
-          <div className="shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => openTokenAdmin('orders')}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-full bg-[#07170B] hover:bg-[#122B18] text-[#A2DF20] dark:bg-[#11281B] dark:hover:bg-[#193827] dark:text-[#A2DF20] px-4 py-2.5 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <LayoutDashboard className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span>Admin Panel</span>
+              </button>
+            )}
             {hasActivePass ? (
               <button
                 type="button"

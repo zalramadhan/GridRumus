@@ -1,9 +1,9 @@
 import {
   Calculator,
   FolderDown,
+  LayoutDashboard,
   LogIn,
   LogOut,
-  Megaphone,
   Moon,
   Sun,
   Table2,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
+import { usePaidPass } from '../hooks/usePaidPass';
 import { usePromoConfig } from '../hooks/usePromoConfig';
 
 interface TopBarProps {
@@ -21,7 +22,8 @@ interface TopBarProps {
 
 export function TopBar({ theme, onSetTheme }: TopBarProps) {
   const { user, openLoginModal, signOutUser } = useAuth();
-  const { isAdmin, openAdminModal } = usePromoConfig();
+  const { openTokenAdmin } = usePaidPass();
+  const { isAdmin } = usePromoConfig();
 
   const navLinkClass =
     'group relative inline-flex items-center gap-1.5 hover:text-[#07170B] dark:hover:text-[#A2DF20] transition-colors whitespace-nowrap shrink-0 py-1 after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-full after:origin-left after:scale-x-0 hover:after:scale-x-100 after:bg-[#008120] dark:after:bg-[#A2DF20] after:transition-transform after:duration-150';
@@ -158,13 +160,14 @@ export function TopBar({ theme, onSetTheme }: TopBarProps) {
                 <motion.button
                   type="button"
                   whileTap={{ scale: 0.95 }}
-                  onClick={openAdminModal}
-                  aria-label="Kelola popup iklan Shopee"
-                  title="Kelola Popup Iklan Shopee"
-                  className="inline-flex items-center gap-1 rounded-full bg-[#EE4D2D] hover:bg-[#D93E1F] px-2.5 py-1 text-[11px] font-bold text-white transition-colors cursor-pointer whitespace-nowrap shrink-0"
+                  onClick={() => openTokenAdmin('orders')}
+                  aria-label="Buka Admin Panel"
+                  title="Buka Admin Panel"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#07170B] hover:bg-[#122B18] text-[#A2DF20] dark:bg-[#A2DF20] dark:hover:bg-[#B3EB3B] dark:text-[#07170B] px-3 py-1.5 text-[11px] font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <Megaphone className="h-3 w-3 shrink-0" aria-hidden="true" />
-                  <span className="hidden sm:inline">Iklan</span>
+                  <LayoutDashboard className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  <span>Admin</span>
+                  <span className="hidden sm:inline">Panel</span>
                 </motion.button>
               )}
               <motion.button

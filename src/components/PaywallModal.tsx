@@ -1,20 +1,31 @@
 import { useEffect, useState } from 'react';
 import {
+  Check,
   CheckCircle2,
   Clock,
+  Copy,
   ExternalLink,
   Loader2,
   Lock,
+  MessageCircle,
   RefreshCw,
+  Settings,
   ShieldCheck,
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAuth } from '../hooks/useAuth';
-import { formatRemainingHoursMinutes, usePaidPass } from '../hooks/usePaidPass';
+import {
+  buildWhatsAppChatUrl,
+  buildWhatsAppPaymentMessage,
+  formatRemainingHoursMinutes,
+  usePaidPass,
+} from '../hooks/usePaidPass';
+import { usePromoConfig } from '../hooks/usePromoConfig';
 
 export function PaywallModal() {
   const { user, authLoading, authError, signInWithGoogle } = useAuth();
+  const { isAdmin } = usePromoConfig();
   const {
     hasActivePass,
     expiresAt,
@@ -22,26 +33,29 @@ export function PaywallModal() {
     pendingOrder,
     priceIdr,
     passDurationHours,
-    mayarConfigured,
-    mayarEnv,
+    whatsappConfigured,
+    whatsappNumber,
+    paymentNote,
     statusLoading,
     actionLoading,
     paywallError,
-    paywallErrorCode,
     isPaywallOpen,
     paywallFeatureLabel,
     closePaywall,
-    clearPaywallError,
-    createInvoice,
-    verifyPendingPayment,
+    openTokenAdmin,
+    createWhatsAppOrder,
     refreshPassStatus,
   } = usePaidPass();
 
-  const [mobileInput, setMobileInput] = useState('');
-  const [localValidationError, setLocalValidationError] = useState('');
+  const [copiedMessage, setCopiedMessage] = useState(false);
+  const [checkingNotice, setCheckingNotice] = useState('');
 
   useEffect(() => {
-    if (!isPaywallOpen) return;
+    if (!isPaywallOpen) {
+      setCheckingNotice('');
+      setCopiedMessage(false);
+      return;
+    }
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !actionLoading && !authLoading) {
         closePaywall();
@@ -51,7 +65,7 @@ export function PaywallModal() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isPaywallOpen, actionLoading, authLoading, closePaywall]);
 
-  // Background poll every 5s while waiting on a pending Mayar invoice inside modal
+  // Background poll every 5s while waiting for admin activation inside modal
   useEffect(() => {
     if (!isPaywallOpen || !user || hasActivePass || !pendingOrder) return;
     const interval = window.setInterval(() => {
@@ -59,17 +73,6 @@ export function PaywallModal() {
     }, 5000);
     return () => window.clearInterval(interval);
   }, [isPaywallOpen, user, hasActivePass, pendingOrder, refreshPassStatus]);
-
-  const handleCreateInvoice = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const digits = mobileInput.replace(/[^\d]/g, '');
-    if (digits.length < 9 || digits.length > 15) {
-      setLocalValidationError('Masukkan nomor WhatsApp / HP aktif (9–15 digit angka).');
-      return;
-    }
-    setLocalValidationError('');
-    await createInvoice(mobileInput);
-  };
 
   const formatExpiryIndo = (iso: string | null) => {
     if (!iso) return '-';
@@ -82,6 +85,41 @@ export function PaywallModal() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const whatsappMessage =
+    user && pendingOrder
+      ? buildWhatsAppPaymentMessage({
+          orderId: pendingOrder.orderId,
+          displayName: user.displayName || user.email || 'Pengguna GridRumus',
+          email: user.email || '-',
+          priceIdr: pendingOrder.amount,
+          passDurationHours,
+        })
+      : '';
+
+  const whatsappUrl =
+    whatsappConfigured && whatsappMessage
+      ? buildWhatsAppChatUrl(whatsappNumber, whatsappMessage)
+      : '#';
+
+  const handleCopyMessage = async () => {
+    if (!whatsappMessage) return;
+    try {
+      await navigator.clipboard.writeText(whatsappMessage);
+      setCopiedMessage(true);
+      window.setTimeout(() => setCopiedMessage(false), 2500);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
+
+  const handleManualCheckStatus = async () => {
+    setCheckingNotice('');
+    await refreshPassStatus();
+    setCheckingNotice(
+      'Status diperbarui. Jika Anda baru saja transfer lewat WhatsApp, tunggu admin mengaktifkan token lalu cek lagi.'
+    );
   };
 
   return (
@@ -129,7 +167,7 @@ export function PaywallModal() {
               <span>
                 {hasActivePass
                   ? 'Token Harian Aktif'
-                  : 'Akses Berbayar · Mayar.id'}
+                  : 'Pembayaran via Chat WhatsApp'}
               </span>
             </div>
 
@@ -148,8 +186,7 @@ export function PaywallModal() {
                 <span className="font-semibold text-[#07170B] dark:text-[#FEFEFE]">
                   {paywallFeatureLabel}
                 </span>
-                , aktifkan Token Harian Rp{priceIdr.toLocaleString('id-ID')} yang berlaku{' '}
-                <span className="font-semibold">{passDurationHours} jam penuh</span>.
+                , pesan Token Harian Rp{priceIdr.toLocaleString('id-ID')} ({passDurationHours} jam penuh) melalui chat WhatsApp Admin.
               </p>
             )}
 
@@ -185,19 +222,12 @@ export function PaywallModal() {
             )}
 
             {/* Error Banner */}
-            {(paywallError || localValidationError || authError) && (
+            {(paywallError || authError) && (
               <div
                 role="alert"
-                className="mt-4 rounded-xl bg-red-50 dark:bg-red-950/50 px-4 py-3 text-xs leading-relaxed text-red-900 dark:text-red-200 space-y-1"
+                className="mt-4 rounded-xl bg-red-50 dark:bg-red-950/50 px-4 py-3 text-xs leading-relaxed text-red-900 dark:text-red-200"
               >
-                <p>{localValidationError || paywallError || authError}</p>
-                {paywallErrorCode === 'MAYAR_NOT_CONFIGURED' && (
-                  <p className="opacity-85">
-                    Tips pemilik aplikasi: daftar gratis di Mayar.id/Mayar.io, salin API Key ke Secret{' '}
-                    <code className="font-mono">MAYAR_API_KEY</code> dan isi{' '}
-                    <code className="font-mono">MAYAR_WEBHOOK_TOKEN</code> di panel Secrets AI Studio.
-                  </p>
-                )}
+                <p>{paywallError || authError}</p>
               </div>
             )}
 
@@ -233,7 +263,7 @@ export function PaywallModal() {
               /* State 2: Belum Login Google */
               <div className="mt-5 space-y-3">
                 <p className="text-xs text-[#5E7064] dark:text-[#8A9A8F]">
-                  Langkah 1 dari 2: Masuk dengan akun Google agar masa aktif 24 jam tercatat aman untuk akun Anda.
+                  Langkah 1 dari 2: Masuk dengan akun Google terlebih dahulu agar admin dapat mengaktifkan token 24 jam ke email akun Anda.
                 </p>
                 <motion.button
                   type="button"
@@ -252,26 +282,47 @@ export function PaywallModal() {
                   )}
                 </motion.button>
               </div>
-            ) : statusLoading ? (
+            ) : statusLoading && !pendingOrder ? (
               /* State 3: Loading status server */
               <div className="mt-6 flex items-center justify-center gap-2 py-4 text-xs text-[#5E7064] dark:text-[#8A9A8F]">
                 <Loader2 className="h-4 w-4 animate-spin text-[#008120] dark:text-[#A2DF20]" />
                 <span>Memeriksa status token akun Anda...</span>
               </div>
+            ) : !whatsappConfigured ? (
+              /* State 4: Nomor WhatsApp Admin belum diatur */
+              <div className="mt-5 space-y-3">
+                <div className="rounded-xl border border-amber-300/60 dark:border-amber-700/50 bg-amber-50/80 dark:bg-amber-950/30 p-4 text-xs leading-relaxed text-amber-900 dark:text-amber-200 space-y-1.5">
+                  <p className="font-bold">Nomor WhatsApp Admin Belum Diatur</p>
+                  <p>
+                    Pemilik website perlu mengatur nomor WhatsApp tujuan terlebih dahulu melalui Panel Admin Token WA (atau variabel <code className="font-mono">WHATSAPP_ADMIN_NUMBER</code>).
+                  </p>
+                </div>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => openTokenAdmin('settings')}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#A2DF20] hover:bg-[#93CE18] px-6 py-3 text-sm font-bold text-[#07170B] transition-colors cursor-pointer"
+                  >
+                    <Settings className="h-4 w-4" aria-hidden="true" />
+                    <span>Atur Nomor WhatsApp di Admin Panel</span>
+                  </button>
+                )}
+              </div>
             ) : pendingOrder ? (
-              /* State 4: Menunggu Pembayaran Mayar.id */
+              /* State 5: Pesanan dibuat -> Siap Chat WhatsApp & Menunggu Aktivasi */
               <div className="mt-5 space-y-4">
                 <div className="rounded-xl border border-[#07170B]/12 dark:border-[#EAF2EC]/14 bg-[#F5F6F6] dark:bg-[#041006] p-4 space-y-2 text-xs">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[#5E7064] dark:text-[#8A9A8F]">Kode Tagihan</span>
+                    <span className="text-[#5E7064] dark:text-[#8A9A8F]">Kode Order</span>
                     <span className="font-mono font-bold text-[#07170B] dark:text-[#FEFEFE]">
                       {pendingOrder.orderId}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[#5E7064] dark:text-[#8A9A8F]">Status</span>
-                    <span className="font-semibold text-amber-700 dark:text-amber-300">
-                      Menunggu Pembayaran (QRIS / VA / E-Wallet)
+                    <span className="text-[#5E7064] dark:text-[#8A9A8F]">Email Akun</span>
+                    <span className="font-medium text-[#07170B] dark:text-[#FEFEFE] truncate max-w-[230px]">
+                      {user.email}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
@@ -280,97 +331,120 @@ export function PaywallModal() {
                       Rp{pendingOrder.amount.toLocaleString('id-ID')}
                     </span>
                   </div>
+                  {paymentNote && (
+                    <div className="pt-2 border-t border-[#07170B]/10 dark:border-[#EAF2EC]/10 text-[#3D4D42] dark:text-[#B5C4BA]">
+                      <span className="font-semibold text-[#07170B] dark:text-[#FEFEFE]">
+                        Info Pembayaran:{' '}
+                      </span>
+                      <span>{paymentNote}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2.5">
                   <a
-                    href={pendingOrder.paymentUrl}
+                    href={whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#A2DF20] hover:bg-[#93CE18] px-6 py-3 text-sm font-bold text-[#07170B] transition-colors"
                   >
-                    <span>Buka Halaman Bayar Mayar.id</span>
+                    <MessageCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>Chat Admin di WhatsApp Sekarang</span>
                     <ExternalLink className="h-4 w-4 shrink-0" aria-hidden="true" />
                   </a>
 
-                  <button
-                    type="button"
-                    disabled={actionLoading}
-                    onClick={() => void verifyPendingPayment(pendingOrder.orderId)}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-5 py-2.5 text-xs font-bold text-[#07170B] dark:text-[#FEFEFE] transition-colors cursor-pointer disabled:opacity-55"
-                  >
-                    {actionLoading ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-                        <span>Mengecek ke Mayar.id...</span>
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span>Saya Sudah Bayar · Cek Status</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleCopyMessage()}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-4 py-2.5 text-xs font-semibold text-[#07170B] dark:text-[#FEFEFE] transition-colors cursor-pointer"
+                    >
+                      {copiedMessage ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-[#008120] dark:text-[#A2DF20]" aria-hidden="true" />
+                          <span>Pesan Tersalin</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span>Salin Format Chat</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={statusLoading}
+                      onClick={() => void handleManualCheckStatus()}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#EAF2EC] hover:bg-[#DCE6DF] dark:bg-[#11281B] dark:hover:bg-[#193827] px-4 py-2.5 text-xs font-bold text-[#07170B] dark:text-[#FEFEFE] transition-colors cursor-pointer disabled:opacity-55"
+                    >
+                      {statusLoading ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                          <span>Mengecek...</span>
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span>Cek Status Aktivasi</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
-                <p className="text-[11px] text-center text-[#5E7064] dark:text-[#8A9A8F]">
-                  Halaman ini otomatis memeriksa pembayaran setiap beberapa detik setelah Anda selesai membayar di Mayar.id.
-                </p>
-              </div>
-            ) : (
-              /* State 5: Form Pembuatan Tagihan Mayar.id */
-              <form onSubmit={handleCreateInvoice} className="mt-5 space-y-4">
-                <div className="text-xs text-[#5E7064] dark:text-[#8A9A8F]">
-                  Akun terhubung:{' '}
-                  <span className="font-semibold text-[#07170B] dark:text-[#FEFEFE]">
-                    {user.email}
-                  </span>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="paywall-mobile-input"
-                    className="block text-xs font-bold text-[#07170B] dark:text-[#FEFEFE] mb-1.5"
-                  >
-                    Nomor WhatsApp / HP Aktif (Wajib untuk Invoice Mayar.id)
-                  </label>
-                  <input
-                    id="paywall-mobile-input"
-                    type="tel"
-                    inputMode="numeric"
-                    value={mobileInput}
-                    onChange={(e) => {
-                      setMobileInput(e.target.value);
-                      if (localValidationError) setLocalValidationError('');
-                      if (paywallError) clearPaywallError();
-                    }}
-                    placeholder="Contoh: 081234567890"
-                    className="w-full rounded-xl border border-[#07170B]/15 dark:border-[#EAF2EC]/18 bg-[#F5F6F6] dark:bg-[#041006] px-4 py-2.5 font-mono text-sm text-[#07170B] dark:text-[#FEFEFE] placeholder:text-[#78887D] dark:placeholder:text-[#6E8074] focus:border-[#008120] dark:focus:border-[#A2DF20] focus:outline-none"
-                  />
-                </div>
-
-                {!mayarConfigured && (
-                  <p className="text-[11px] text-amber-800 dark:text-amber-300">
-                    Catatan: Kunci server <code className="font-mono">MAYAR_API_KEY</code> ({mayarEnv}) belum diisi di Secrets AI Studio.
+                {checkingNotice && (
+                  <p className="text-[11px] text-center text-[#008120] dark:text-[#A2DF20]">
+                    {checkingNotice}
                   </p>
                 )}
 
+                <p className="text-[11px] text-center text-[#5E7064] dark:text-[#8A9A8F]">
+                  Kirim chat WhatsApp &amp; selesaikan transfer Rp{priceIdr.toLocaleString('id-ID')}. Setelah admin mengaktifkan token akun Anda, akses otomatis terbuka.
+                </p>
+              </div>
+            ) : (
+              /* State 6: Siap buat Kode Order & arahkan ke WhatsApp */
+              <div className="mt-5 space-y-4">
+                <div className="rounded-xl border border-[#07170B]/10 dark:border-[#EAF2EC]/12 bg-[#F5F6F6] dark:bg-[#041006] p-3.5 text-xs space-y-1">
+                  <div className="text-[#5E7064] dark:text-[#8A9A8F]">
+                    Akun Google terhubung:{' '}
+                    <span className="font-semibold text-[#07170B] dark:text-[#FEFEFE]">
+                      {user.email}
+                    </span>
+                  </div>
+                  {paymentNote && (
+                    <div className="text-[#3D4D42] dark:text-[#B5C4BA]">
+                      <span className="font-semibold text-[#07170B] dark:text-[#FEFEFE]">
+                        Info Pembayaran:{' '}
+                      </span>
+                      <span>{paymentNote}</span>
+                    </div>
+                  )}
+                </div>
+
                 <motion.button
-                  type="submit"
+                  type="button"
                   whileTap={{ scale: 0.98 }}
                   disabled={actionLoading}
+                  onClick={() => void createWhatsAppOrder()}
                   className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#A2DF20] hover:bg-[#93CE18] px-6 py-3 text-sm font-bold text-[#07170B] transition-colors cursor-pointer disabled:opacity-60"
                 >
                   {actionLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                      <span>Membuat Invoice Mayar.id...</span>
+                      <span>Menyiapkan Pesanan WhatsApp...</span>
                     </>
                   ) : (
-                    <span>Bayar Rp{priceIdr.toLocaleString('id-ID')} via Mayar.id</span>
+                    <>
+                      <MessageCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span>
+                        Lanjut Bayar Rp{priceIdr.toLocaleString('id-ID')} via WhatsApp
+                      </span>
+                    </>
                   )}
                 </motion.button>
-              </form>
+              </div>
             )}
           </motion.div>
         </motion.div>

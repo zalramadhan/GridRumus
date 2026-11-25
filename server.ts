@@ -7,15 +7,21 @@ import type { NextFunction, Request, Response } from 'express';
 import { getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import {
-  activatePassForOrder,
-  findOrderByMayarIdentifiers,
+  approveOrderByAdmin,
+  cancelOrderByAdmin,
   getActivePendingOrderForUser,
-  getOrderById,
+  getAdminPaymentsOverview,
   getUserPassSummary,
-  PASS_DURATION_MS,
+  getWhatsAppSettings,
+  grantPassByEmail,
+  isValidOrderId,
+  normalizeWhatsAppNumber,
+  revokePass,
   saveOrder,
-  TOKEN_PRICE_IDR,
+  updateWhatsAppSettings,
 } from './server/paymentStore.ts';
+
+const ADMIN_EMAIL = 'rizaldyramadhan@gmail.com';
 
 interface FirebaseAppletConfig {
   projectId?: string;
@@ -25,7 +31,61 @@ interface AuthenticatedRequest extends Request {
   authUser?: {
     uid: string;
     email: string;
+    emailVerified: boolean;
     name: string;
+  };
+}
+
+interface RateBucket {
+  count: number;
+  resetAt: number;
+}
+
+const rateBuckets = new Map<string, RateBucket>();
+
+// Periodically prune expired rate-limit entries to prevent unbounded memory growth
+const pruneTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateBuckets.entries()) {
+    if (bucket.resetAt <= now) {
+      rateBuckets.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+pruneTimer.unref();
+
+function getClientIp(req: Request): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.trim()) {
+    return forwarded.split(',')[0].trim().slice(0, 64);
+  }
+  return (req.ip || req.socket.remoteAddress || 'unknown').slice(0, 64);
+}
+
+function createRateLimiter(bucketName: string, maxRequests: number, windowMs: number) {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
+    const now = Date.now();
+    const identity = req.authUser?.uid || getClientIp(req);
+    const key = `${bucketName}:${identity}`;
+    const existing = rateBuckets.get(key);
+
+    if (!existing || existing.resetAt <= now) {
+      rateBuckets.set(key, { count: 1, resetAt: now + windowMs });
+      next();
+      return;
+    }
+
+    if (existing.count >= maxRequests) {
+      const retryAfterSec = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfterSec));
+      res.status(429).json({
+        error: 'Terlalu banyak permintaan dalam waktu singkat. Silakan tunggu sebentar lalu coba lagi.',
+      });
+      return;
+    }
+
+    existing.count += 1;
+    next();
   };
 }
 
@@ -46,52 +106,6 @@ const adminApp = getApps().length
   : initializeApp(FIREBASE_PROJECT_ID ? { projectId: FIREBASE_PROJECT_ID } : {});
 const adminAuth = getAuth(adminApp);
 
-const MAYAR_ENV = process.env.MAYAR_ENV?.trim().toLowerCase() === 'production'
-  ? 'production'
-  : 'sandbox';
-const MAYAR_BASE_URL =
-  MAYAR_ENV === 'production' ? 'https://api.mayar.id' : 'https://api.mayar.io';
-const MAYAR_API_KEY = process.env.MAYAR_API_KEY?.trim() || '';
-const MAYAR_WEBHOOK_TOKEN = process.env.MAYAR_WEBHOOK_TOKEN?.trim() || '';
-
-function safeCompareTokens(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return crypto.timingSafeEqual(bufA, bufB);
-}
-
-function normalizePhoneNumber(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null;
-  const digits = raw.replace(/[^\d]/g, '');
-  if (digits.length < 9 || digits.length > 15) return null;
-  if (digits.startsWith('62')) {
-    return `0${digits.slice(2)}`;
-  }
-  return digits.startsWith('0') ? digits : `0${digits}`;
-}
-
-function resolveTrustedOrigin(req: Request): string {
-  const envUrl = process.env.APP_URL?.trim();
-  if (envUrl && /^https?:\/\//i.test(envUrl) && !envUrl.includes('MY_APP_URL')) {
-    return envUrl.replace(/\/+$/, '');
-  }
-  const forwardedProto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https')
-    .split(',')[0]
-    .trim();
-  const proto = forwardedProto === 'http' ? 'http' : 'https';
-  const host = String(req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000')
-    .split(',')[0]
-    .trim();
-  return `${proto}://${host}`;
-}
-
-function isPaidStatus(statusValue: unknown): boolean {
-  if (typeof statusValue !== 'string') return false;
-  const s = statusValue.trim().toLowerCase();
-  return s === 'paid' || s === 'settled' || s === 'success' || s === 'completed';
-}
-
 async function requireFirebaseAuth(
   req: AuthenticatedRequest,
   res: Response,
@@ -104,20 +118,21 @@ async function requireFirebaseAuth(
   }
 
   const token = authHeader.slice(7).trim();
-  if (!token) {
-    res.status(401).json({ error: 'Token autentikasi tidak ditemukan.' });
+  if (!token || token.length > 4096) {
+    res.status(401).json({ error: 'Token autentikasi tidak valid.' });
     return;
   }
 
   try {
     const decoded = await adminAuth.verifyIdToken(token);
-    if (!decoded.uid || !decoded.email) {
-      res.status(401).json({ error: 'Akun Google tidak memiliki email terverifikasi.' });
+    if (!decoded.uid || !decoded.email || decoded.email_verified !== true) {
+      res.status(401).json({ error: 'Akun Google harus memiliki email yang terverifikasi.' });
       return;
     }
     req.authUser = {
       uid: decoded.uid,
       email: decoded.email,
+      emailVerified: true,
       name:
         (typeof decoded.name === 'string' && decoded.name.trim()) ||
         decoded.email.split('@')[0] ||
@@ -126,357 +141,323 @@ async function requireFirebaseAuth(
     next();
   } catch (err) {
     console.error('Firebase token verification error:', err);
-    res.status(401).json({ error: 'Sesi login tidak valid atau kedaluwarsa. Silakan masuk ulang.' });
+    res.status(401).json({
+      error: 'Sesi login tidak valid atau kedaluwarsa. Silakan masuk ulang.',
+    });
   }
+}
+
+function requireAdminAuth(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  const user = req.authUser;
+  if (!user || !user.emailVerified || user.email.toLowerCase() !== ADMIN_EMAIL) {
+    res.status(403).json({ error: 'Akses ditolak. Khusus akun admin terverifikasi.' });
+    return;
+  }
+  next();
+}
+
+function requireJsonContentType(req: Request, res: Response, next: NextFunction): void {
+  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    const ct = req.headers['content-type'] || '';
+    if (!ct.toLowerCase().includes('application/json')) {
+      res.status(415).json({ error: 'Permintaan harus menggunakan Content-Type application/json.' });
+      return;
+    }
+  }
+  next();
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
 }
 
 async function startServer() {
   const app = express();
-  app.set('trust proxy', true);
-  app.use(express.json({ limit: '256kb' }));
+  app.disable('x-powered-by');
+  app.set('trust proxy', 1);
 
-  // 1. Cek status token harian 24 jam milik user saat ini
+  // Security headers compatible with iframe preview & Google Sign-In popup
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    if (req.path.startsWith('/api/')) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+    next();
+  });
+
+  app.use('/api/*', requireJsonContentType);
+  app.use('/api/*', express.json({ limit: '64kb' }));
+
+  // Malformed JSON error handler
+  app.use(
+    (err: unknown, req: Request, res: Response, next: NextFunction): void => {
+      if (err instanceof SyntaxError && req.path.startsWith('/api/')) {
+        res.status(400).json({ error: 'Format data JSON tidak valid.' });
+        return;
+      }
+      next(err);
+    }
+  );
+
+  const statusRateLimit = createRateLimiter('status', 60, 60 * 1000);
+  const createOrderRateLimit = createRateLimiter('create-order', 10, 60 * 1000);
+  const adminRateLimit = createRateLimiter('admin', 60, 60 * 1000);
+
+  // 1. Cek status token harian milik user saat ini + info WhatsApp admin
   app.get(
     '/api/payments/status',
     requireFirebaseAuth,
+    statusRateLimit,
     (req: AuthenticatedRequest, res: Response) => {
-      const uid = req.authUser!.uid;
-      const summary = getUserPassSummary(uid);
+      const { uid, email } = req.authUser!;
+      const summary = getUserPassSummary(uid, email);
+      const waSettings = getWhatsAppSettings();
       res.json({
         ...summary,
-        priceIdr: TOKEN_PRICE_IDR,
-        passDurationHours: Math.round(PASS_DURATION_MS / (60 * 60 * 1000)),
-        mayarConfigured: Boolean(MAYAR_API_KEY),
-        mayarEnv: MAYAR_ENV,
+        priceIdr: waSettings.priceIdr,
+        passDurationHours: waSettings.passDurationHours,
+        whatsappConfigured: Boolean(waSettings.whatsappNumber),
+        whatsappNumber: waSettings.whatsappNumber,
+        paymentNote: waSettings.paymentNote,
       });
     }
   );
 
-  // 2. Buat tagihan Rp5.000 otomatis via Mayar.id Headless API
+  // 2. Buat pesanan Token Harian untuk diteruskan ke chat WhatsApp Admin
   app.post(
-    '/api/payments/create-invoice',
+    '/api/payments/create-whatsapp-order',
     requireFirebaseAuth,
-    async (req: AuthenticatedRequest, res: Response) => {
-      if (!MAYAR_API_KEY) {
+    createOrderRateLimit,
+    (req: AuthenticatedRequest, res: Response) => {
+      const waSettings = getWhatsAppSettings();
+      if (!waSettings.whatsappNumber) {
         res.status(503).json({
-          code: 'MAYAR_NOT_CONFIGURED',
+          code: 'WHATSAPP_NOT_CONFIGURED',
           error:
-            'Kunci API Mayar (MAYAR_API_KEY) belum diatur pada konfigurasi server. Tambahkan MAYAR_API_KEY di panel Secrets.',
+            'Nomor WhatsApp Admin belum diatur. Pemilik aplikasi dapat mengaturnya di Admin Panel.',
         });
         return;
       }
 
       const { uid, email, name } = req.authUser!;
-      const normalizedMobile = normalizePhoneNumber(req.body?.mobile);
-      if (!normalizedMobile) {
-        res.status(400).json({
-          error: 'Masukkan nomor WhatsApp/HP aktif (9–15 digit angka) untuk pembuatan tagihan Mayar.id.',
-        });
-        return;
-      }
-
-      // Reuse active pending order created within the last 30 mins to prevent duplicate invoices
       const existingPending = getActivePendingOrderForUser(uid);
       if (existingPending) {
         res.json({
           order: existingPending,
-          passStatus: getUserPassSummary(uid),
+          passStatus: getUserPassSummary(uid, email),
+          whatsappNumber: waSettings.whatsappNumber,
+          paymentNote: waSettings.paymentNote,
+          priceIdr: waSettings.priceIdr,
+          passDurationHours: waSettings.passDurationHours,
         });
         return;
       }
 
-      const orderId = `GR-PASS-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-      const invoiceExpiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
-      const origin = resolveTrustedOrigin(req);
-      const redirectUrl = `${origin}/?payment=checking&orderId=${encodeURIComponent(orderId)}#latihan-soal`;
+      const orderId = `GR-WA-${Date.now()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`;
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-      try {
-        const mayarResp = await fetch(`${MAYAR_BASE_URL}/hl/v1/invoice/create`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${MAYAR_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: name.slice(0, 100),
-            email: email.slice(0, 120),
-            mobile: normalizedMobile,
-            redirectUrl,
-            description: `Token Harian GridRumus 24 Jam (${orderId})`,
-            expiredAt: invoiceExpiresAt,
-            items: [
-              {
-                quantity: 1,
-                rate: TOKEN_PRICE_IDR,
-                description: 'Token Akses Penuh Arena Latihan Soal GridRumus (24 Jam)',
-              },
-            ],
-            extraData: {
-              orderId,
-              uid,
-              product: 'gridrumus-daily-pass-24h',
-            },
-          }),
-        });
-
-        const rawText = await mayarResp.text();
-        let parsed: Record<string, unknown> = {};
-        try {
-          parsed = JSON.parse(rawText) as Record<string, unknown>;
-        } catch {
-          parsed = {};
-        }
-
-        const dataObj =
-          parsed.data && typeof parsed.data === 'object'
-            ? (parsed.data as Record<string, unknown>)
-            : {};
-
-        const mayarInvoiceId = typeof dataObj.id === 'string' ? dataObj.id : '';
-        const mayarTxId =
-          typeof dataObj.transactionId === 'string' ? dataObj.transactionId : '';
-        const paymentUrl =
-          typeof dataObj.link === 'string'
-            ? dataObj.link
-            : typeof dataObj.paymentUrl === 'string'
-            ? dataObj.paymentUrl
-            : '';
-
-        if (!mayarResp.ok || !mayarInvoiceId || !paymentUrl) {
-          console.error('Mayar create-invoice failed:', mayarResp.status, rawText);
-          res.status(502).json({
-            error:
-              (typeof parsed.messages === 'string' && parsed.messages) ||
-              (typeof parsed.message === 'string' && parsed.message) ||
-              'Gagal membuat tagihan pembayaran ke Mayar.id. Periksa MAYAR_API_KEY dan mode MAYAR_ENV.',
-          });
-          return;
-        }
-
-        const createdOrder = saveOrder({
-          orderId,
-          uid,
-          email,
-          displayName: name,
-          mobile: normalizedMobile,
-          amount: TOKEN_PRICE_IDR,
-          status: 'pending',
-          mayarInvoiceId,
-          mayarTransactionId: mayarTxId,
-          paymentUrl,
-          createdAt: new Date().toISOString(),
-          expiresAt: invoiceExpiresAt,
-          paidAt: null,
-          passExpiresAt: null,
-        });
-
-        res.json({
-          order: createdOrder,
-          passStatus: getUserPassSummary(uid),
-        });
-      } catch (err) {
-        console.error('Error calling Mayar create-invoice:', err);
-        res.status(502).json({
-          error: 'Tidak dapat terhubung ke server Mayar.id saat membuat invoice.',
-        });
-      }
-    }
-  );
-
-  // 3. Verifikasi langsung status invoice ke Mayar API (fallback bila webhook belum masuk)
-  app.post(
-    '/api/payments/verify',
-    requireFirebaseAuth,
-    async (req: AuthenticatedRequest, res: Response) => {
-      const uid = req.authUser!.uid;
-      const orderId = typeof req.body?.orderId === 'string' ? req.body.orderId.trim() : '';
-
-      const order = orderId
-        ? getOrderById(orderId)
-        : getActivePendingOrderForUser(uid);
-
-      if (!order || order.uid !== uid) {
-        res.status(404).json({ error: 'Tagihan pembayaran tidak ditemukan untuk akun ini.' });
-        return;
-      }
-
-      if (order.status === 'paid') {
-        res.json({
-          verified: true,
-          order,
-          passStatus: getUserPassSummary(uid),
-        });
-        return;
-      }
-
-      if (!MAYAR_API_KEY) {
-        res.status(503).json({
-          code: 'MAYAR_NOT_CONFIGURED',
-          error: 'MAYAR_API_KEY belum diatur pada konfigurasi server.',
-        });
-        return;
-      }
-
-      try {
-        const detailResp = await fetch(
-          `${MAYAR_BASE_URL}/hl/v1/invoice/${encodeURIComponent(order.mayarInvoiceId)}`,
-          {
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${MAYAR_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        const rawText = await detailResp.text();
-        let parsed: Record<string, unknown> = {};
-        try {
-          parsed = JSON.parse(rawText) as Record<string, unknown>;
-        } catch {
-          parsed = {};
-        }
-
-        const dataNode = Array.isArray(parsed.data)
-          ? (parsed.data[0] as Record<string, unknown> | undefined)
-          : parsed.data && typeof parsed.data === 'object'
-          ? (parsed.data as Record<string, unknown>)
-          : undefined;
-
-        const remoteStatus =
-          dataNode && typeof dataNode.status === 'string' ? dataNode.status : 'unpaid';
-        const remoteAmount =
-          dataNode && typeof dataNode.amount === 'number' ? dataNode.amount : order.amount;
-        const remoteTxId =
-          dataNode && typeof dataNode.transactionId === 'string'
-            ? dataNode.transactionId
-            : order.mayarTransactionId;
-
-        if (detailResp.ok && isPaidStatus(remoteStatus) && remoteAmount >= TOKEN_PRICE_IDR) {
-          const updatedOrder = activatePassForOrder(order.orderId, remoteTxId);
-          res.json({
-            verified: true,
-            order: updatedOrder,
-            passStatus: getUserPassSummary(uid),
-          });
-          return;
-        }
-
-        res.json({
-          verified: false,
-          remoteStatus,
-          order,
-          passStatus: getUserPassSummary(uid),
-        });
-      } catch (err) {
-        console.error('Error verifying invoice with Mayar:', err);
-        res.status(502).json({
-          error: 'Gagal memeriksa status tagihan ke server Mayar.id.',
-        });
-      }
-    }
-  );
-
-  // 4. Webhook otomatis dari Mayar.id (event: payment.received)
-  app.post('/api/payments/mayar/webhook', (req: Request, res: Response) => {
-    if (!MAYAR_WEBHOOK_TOKEN) {
-      res.status(503).json({
-        error: 'MAYAR_WEBHOOK_TOKEN belum dikonfigurasi pada server.',
+      const createdOrder = saveOrder({
+        orderId,
+        uid,
+        email,
+        displayName: name,
+        amount: waSettings.priceIdr,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        expiresAt,
+        paidAt: null,
+        passExpiresAt: null,
+        approvedByEmail: null,
       });
-      return;
+
+      res.json({
+        order: createdOrder,
+        passStatus: getUserPassSummary(uid, email),
+        whatsappNumber: waSettings.whatsappNumber,
+        paymentNote: waSettings.paymentNote,
+        priceIdr: waSettings.priceIdr,
+        passDurationHours: waSettings.passDurationHours,
+      });
     }
+  );
 
-    const queryToken = typeof req.query.token === 'string' ? req.query.token.trim() : '';
-    const headerCallbackToken =
-      typeof req.headers['x-callback-token'] === 'string'
-        ? req.headers['x-callback-token'].trim()
-        : '';
-    const authHeader = req.headers.authorization || '';
-    const bearerToken = authHeader.startsWith('Bearer ')
-      ? authHeader.slice(7).trim()
-      : '';
-
-    const candidateToken = queryToken || headerCallbackToken || bearerToken;
-    if (!candidateToken || !safeCompareTokens(candidateToken, MAYAR_WEBHOOK_TOKEN)) {
-      res.status(401).json({ error: 'Token webhook tidak valid.' });
-      return;
+  // 3. Admin: Ambil ringkasan dashboard, pengaturan WhatsApp, antrean order, token aktif, dan audit log
+  app.get(
+    '/api/payments/admin/overview',
+    requireFirebaseAuth,
+    requireAdminAuth,
+    adminRateLimit,
+    (_req: AuthenticatedRequest, res: Response) => {
+      res.json(getAdminPaymentsOverview());
     }
+  );
 
-    const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<
-      string,
-      unknown
-    >;
-    const eventName = typeof body.event === 'string' ? body.event.trim() : '';
-    const data = (
-      body.data && typeof body.data === 'object' ? body.data : body
-    ) as Record<string, unknown>;
+  // 4. Admin: Simpan nomor WhatsApp tujuan, catatan pembayaran, harga token, dan masa aktif
+  app.post(
+    '/api/payments/admin/settings',
+    requireFirebaseAuth,
+    requireAdminAuth,
+    adminRateLimit,
+    (req: AuthenticatedRequest, res: Response) => {
+      const rawNumber = typeof req.body?.whatsappNumber === 'string' ? req.body.whatsappNumber : '';
+      const rawNote = typeof req.body?.paymentNote === 'string' ? req.body.paymentNote : '';
+      const rawPrice = req.body?.priceIdr;
+      const rawHours = req.body?.passDurationHours;
+      const normalized = normalizeWhatsAppNumber(rawNumber);
 
-    const statusValue = data.status ?? body.status;
-    if (eventName && eventName !== 'payment.received') {
-      res.status(200).json({ ok: true, ignored: true, event: eventName });
-      return;
+      if (!normalized) {
+        res.status(400).json({
+          error:
+            'Masukkan nomor WhatsApp Admin yang valid (9–15 digit, mis. 081234567890 atau 6281234567890).',
+        });
+        return;
+      }
+
+      const numPrice = Number(rawPrice);
+      if (rawPrice !== undefined && (!Number.isFinite(numPrice) || numPrice < 1000 || numPrice > 1000000)) {
+        res.status(400).json({
+          error: 'Harga token harus antara Rp1.000 hingga Rp1.000.000.',
+        });
+        return;
+      }
+
+      const numHours = Number(rawHours);
+      if (rawHours !== undefined && (!Number.isFinite(numHours) || numHours < 1 || numHours > 720)) {
+        res.status(400).json({
+          error: 'Masa aktif token harus antara 1 hingga 720 jam.',
+        });
+        return;
+      }
+
+      const updated = updateWhatsAppSettings(
+        normalized,
+        rawNote,
+        req.authUser!.email,
+        rawPrice,
+        rawHours
+      );
+      res.json({
+        settings: updated,
+        overview: getAdminPaymentsOverview(),
+      });
     }
-    if (statusValue && !isPaidStatus(statusValue)) {
-      res.status(200).json({ ok: true, ignored: true, status: statusValue });
-      return;
+  );
+
+  // 5. Admin: Setujui & aktifkan token dari daftar order WhatsApp
+  app.post(
+    '/api/payments/admin/approve-order',
+    requireFirebaseAuth,
+    requireAdminAuth,
+    adminRateLimit,
+    (req: AuthenticatedRequest, res: Response) => {
+      const orderId = typeof req.body?.orderId === 'string' ? req.body.orderId.trim() : '';
+      if (!isValidOrderId(orderId)) {
+        res.status(400).json({ error: 'Format kode order tidak valid.' });
+        return;
+      }
+
+      const approved = approveOrderByAdmin(orderId, req.authUser!.email);
+      if (!approved) {
+        res.status(404).json({ error: 'Order tidak ditemukan.' });
+        return;
+      }
+
+      res.json({
+        order: approved,
+        overview: getAdminPaymentsOverview(),
+      });
     }
+  );
 
-    const extraData =
-      data.extraData && typeof data.extraData === 'object'
-        ? (data.extraData as Record<string, unknown>)
-        : {};
-    const extraOrderId =
-      typeof extraData.orderId === 'string' ? extraData.orderId : undefined;
-    const descMatch =
-      typeof data.productDescription === 'string'
-        ? data.productDescription.match(/GR-PASS-[A-Z0-9-]+/)
-        : typeof data.description === 'string'
-        ? data.description.match(/GR-PASS-[A-Z0-9-]+/)
-        : null;
+  // 6. Admin: Batalkan / bersihkan order pending yang tidak dibayar
+  app.post(
+    '/api/payments/admin/cancel-order',
+    requireFirebaseAuth,
+    requireAdminAuth,
+    adminRateLimit,
+    (req: AuthenticatedRequest, res: Response) => {
+      const orderId = typeof req.body?.orderId === 'string' ? req.body.orderId.trim() : '';
+      if (!isValidOrderId(orderId)) {
+        res.status(400).json({ error: 'Format kode order tidak valid.' });
+        return;
+      }
 
-    const orderId = extraOrderId || (descMatch ? descMatch[0] : undefined);
-    const invoiceId =
-      typeof data.paymentLinkId === 'string'
-        ? data.paymentLinkId
-        : typeof data.id === 'string'
-        ? data.id
-        : undefined;
-    const txId =
-      typeof data.transactionId === 'string'
-        ? data.transactionId
-        : typeof data.id === 'string'
-        ? data.id
-        : undefined;
+      const cancelled = cancelOrderByAdmin(orderId, req.authUser!.email);
+      if (!cancelled) {
+        res.status(404).json({ error: 'Order pending tidak ditemukan.' });
+        return;
+      }
 
-    const matchedOrder = findOrderByMayarIdentifiers(invoiceId, txId, orderId);
-    if (!matchedOrder) {
-      res.status(202).json({ ok: true, matched: false });
-      return;
+      res.json({
+        ok: true,
+        overview: getAdminPaymentsOverview(),
+      });
     }
+  );
 
-    const numericAmount =
-      typeof data.amount === 'number'
-        ? data.amount
-        : typeof data.nettAmount === 'number'
-        ? data.nettAmount
-        : matchedOrder.amount;
+  // 7. Admin: Aktifkan token langsung via Email Google pengguna
+  app.post(
+    '/api/payments/admin/grant-by-email',
+    requireFirebaseAuth,
+    requireAdminAuth,
+    adminRateLimit,
+    (req: AuthenticatedRequest, res: Response) => {
+      const targetEmail = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+      if (!isValidEmail(targetEmail)) {
+        res.status(400).json({ error: 'Masukkan alamat email Google pengguna yang valid.' });
+        return;
+      }
 
-    if (numericAmount < TOKEN_PRICE_IDR) {
-      res.status(400).json({ error: 'Nominal pembayaran kurang dari harga token.' });
-      return;
+      const granted = grantPassByEmail(targetEmail, req.authUser!.email);
+      res.json({
+        granted,
+        overview: getAdminPaymentsOverview(),
+      });
     }
+  );
 
-    const activated = activatePassForOrder(matchedOrder.orderId, txId);
-    res.status(200).json({
-      ok: true,
-      matched: true,
-      orderId: activated?.orderId,
-      passExpiresAt: activated?.passExpiresAt,
-    });
-  });
+  // 8. Admin: Nonaktifkan token aktif jika terjadi kesalahan input
+  app.post(
+    '/api/payments/admin/revoke-pass',
+    requireFirebaseAuth,
+    requireAdminAuth,
+    adminRateLimit,
+    (req: AuthenticatedRequest, res: Response) => {
+      const targetId = typeof req.body?.id === 'string' ? req.body.id.trim() : '';
+      if (!targetId || targetId.length > 254) {
+        res.status(400).json({ error: 'ID atau email token wajib diisi dengan benar.' });
+        return;
+      }
+
+      revokePass(targetId, req.authUser!.email);
+      res.json({
+        ok: true,
+        overview: getAdminPaymentsOverview(),
+      });
+    }
+  );
 
   app.all('/api/*', (_req: Request, res: Response) => {
     res.status(404).json({ error: 'Endpoint API tidak ditemukan.' });
+  });
+
+  // Final sanitized API error handler (prevents leaking stack traces)
+  app.use((err: unknown, req: Request, res: Response, next: NextFunction): void => {
+    if (req.path.startsWith('/api/')) {
+      console.error('Unhandled API error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Terjadi kesalahan internal server.' });
+      }
+      return;
+    }
+    next(err);
   });
 
   if (process.env.NODE_ENV !== 'production') {

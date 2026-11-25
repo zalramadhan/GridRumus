@@ -5,7 +5,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import { useAuth } from './useAuth';
@@ -14,7 +13,6 @@ export interface PaidOrderSummary {
   orderId: string;
   amount: number;
   status: 'pending' | 'paid' | 'expired';
-  paymentUrl: string;
   createdAt: string;
   expiresAt: string;
   paidAt: string | null;
@@ -29,9 +27,12 @@ interface PassStatusResponse {
   recentOrders: PaidOrderSummary[];
   priceIdr?: number;
   passDurationHours?: number;
-  mayarConfigured?: boolean;
-  mayarEnv?: 'sandbox' | 'production';
+  whatsappConfigured?: boolean;
+  whatsappNumber?: string;
+  paymentNote?: string;
 }
+
+export type AdminPanelTab = 'orders' | 'settings' | 'promo';
 
 interface PaidPassContextValue {
   hasActivePass: boolean;
@@ -41,20 +42,25 @@ interface PaidPassContextValue {
   recentOrders: PaidOrderSummary[];
   priceIdr: number;
   passDurationHours: number;
-  mayarConfigured: boolean;
-  mayarEnv: 'sandbox' | 'production';
+  whatsappConfigured: boolean;
+  whatsappNumber: string;
+  paymentNote: string;
   statusLoading: boolean;
   actionLoading: boolean;
   paywallError: string | null;
   paywallErrorCode: string | null;
   isPaywallOpen: boolean;
   paywallFeatureLabel: string;
+  isTokenAdminOpen: boolean;
+  adminPanelTab: AdminPanelTab;
+  setAdminPanelTab: (tab: AdminPanelTab) => void;
   openPaywall: (featureLabel?: string) => void;
   closePaywall: () => void;
+  openTokenAdmin: (tab?: AdminPanelTab) => void;
+  closeTokenAdmin: () => void;
   clearPaywallError: () => void;
   refreshPassStatus: () => Promise<void>;
-  createInvoice: (mobile: string) => Promise<boolean>;
-  verifyPendingPayment: (orderId?: string) => Promise<boolean>;
+  createWhatsAppOrder: () => Promise<boolean>;
 }
 
 const PaidPassContext = createContext<PaidPassContextValue | null>(null);
@@ -73,6 +79,34 @@ export function formatRemainingHoursMinutes(totalSeconds: number): string {
   return `${secs} detik`;
 }
 
+export function buildWhatsAppPaymentMessage(params: {
+  orderId: string;
+  displayName: string;
+  email: string;
+  priceIdr: number;
+  passDurationHours: number;
+}): string {
+  const lines = [
+    'Halo Admin GridRumus, saya ingin beli Token Latihan Soal:',
+    `- Kode Order: ${params.orderId}`,
+    `- Nama: ${params.displayName}`,
+    `- Email Google: ${params.email}`,
+    `- Paket: Token Harian ${params.passDurationHours} Jam (Rp${params.priceIdr.toLocaleString('id-ID')})`,
+    '',
+    'Mohon info metode transfer/QRIS agar token akun saya bisa diaktifkan. Terima kasih!',
+  ];
+  return lines.join('\n');
+}
+
+export function buildWhatsAppChatUrl(
+  whatsappNumber: string,
+  message: string
+): string {
+  const cleanNumber = whatsappNumber.replace(/[^\d]/g, '');
+  if (!cleanNumber) return '#';
+  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
+}
+
 export function PaidPassProvider({ children }: { children: ReactNode }) {
   const { user, authReady } = useAuth();
 
@@ -83,18 +117,19 @@ export function PaidPassProvider({ children }: { children: ReactNode }) {
   const [recentOrders, setRecentOrders] = useState<PaidOrderSummary[]>([]);
   const [priceIdr, setPriceIdr] = useState(5000);
   const [passDurationHours, setPassDurationHours] = useState(24);
-  const [mayarConfigured, setMayarConfigured] = useState(true);
-  const [mayarEnv, setMayarEnv] = useState<'sandbox' | 'production'>('sandbox');
+  const [whatsappConfigured, setWhatsappConfigured] = useState(false);
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [paymentNote, setPaymentNote] = useState('');
   const [statusLoading, setStatusLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [paywallError, setPaywallError] = useState<string | null>(null);
   const [paywallErrorCode, setPaywallErrorCode] = useState<string | null>(null);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
+  const [isTokenAdminOpen, setIsTokenAdminOpen] = useState(false);
+  const [adminPanelTab, setAdminPanelTab] = useState<AdminPanelTab>('orders');
   const [paywallFeatureLabel, setPaywallFeatureLabel] = useState(
     'Seluruh Mode Arena Latihan Soal'
   );
-
-  const checkedRedirectRef = useRef(false);
 
   const applyServerSummary = useCallback((data: PassStatusResponse) => {
     setHasActivePass(Boolean(data.hasActivePass));
@@ -106,11 +141,14 @@ export function PaidPassProvider({ children }: { children: ReactNode }) {
     if (typeof data.passDurationHours === 'number') {
       setPassDurationHours(data.passDurationHours);
     }
-    if (typeof data.mayarConfigured === 'boolean') {
-      setMayarConfigured(data.mayarConfigured);
+    if (typeof data.whatsappConfigured === 'boolean') {
+      setWhatsappConfigured(data.whatsappConfigured);
     }
-    if (data.mayarEnv === 'production' || data.mayarEnv === 'sandbox') {
-      setMayarEnv(data.mayarEnv);
+    if (typeof data.whatsappNumber === 'string') {
+      setWhatsappNumber(data.whatsappNumber);
+    }
+    if (typeof data.paymentNote === 'string') {
+      setPaymentNote(data.paymentNote);
     }
   }, []);
 
@@ -144,79 +182,10 @@ export function PaidPassProvider({ children }: { children: ReactNode }) {
     }
   }, [user, applyServerSummary]);
 
-  const verifyPendingPayment = useCallback(
-    async (orderId?: string): Promise<boolean> => {
-      if (!user) return false;
-      setActionLoading(true);
-      setPaywallError(null);
-      setPaywallErrorCode(null);
-      try {
-        const token = await user.getIdToken();
-        const resp = await fetch('/api/payments/verify', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            orderId: orderId || pendingOrder?.orderId || '',
-          }),
-        });
-        const data = (await resp.json()) as {
-          verified?: boolean;
-          remoteStatus?: string;
-          error?: string;
-          code?: string;
-          passStatus?: PassStatusResponse;
-        };
-
-        if (data.passStatus) {
-          applyServerSummary(data.passStatus);
-        }
-
-        if (!resp.ok) {
-          setPaywallErrorCode(data.code ?? null);
-          setPaywallError(data.error || 'Gagal memeriksa status pembayaran.');
-          return false;
-        }
-
-        if (!data.verified) {
-          setPaywallError(
-            'Pembayaran belum berstatus lunas di Mayar.id. Jika Anda baru saja transfer/scan QRIS, tunggu beberapa detik lalu cek ulang.'
-          );
-          return false;
-        }
-
-        return true;
-      } catch {
-        setPaywallError('Tidak dapat terhubung ke server untuk memverifikasi pembayaran.');
-        return false;
-      } finally {
-        setActionLoading(false);
-      }
-    },
-    [user, pendingOrder?.orderId, applyServerSummary]
-  );
-
   useEffect(() => {
     if (!authReady) return;
     void refreshPassStatus();
   }, [authReady, user, refreshPassStatus]);
-
-  // Auto-handle Mayar redirect callback (?payment=checking&orderId=...)
-  useEffect(() => {
-    if (!authReady || !user || checkedRedirectRef.current) return;
-    if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'checking') {
-      checkedRedirectRef.current = true;
-      const orderId = params.get('orderId') || undefined;
-      const cleanUrl = `${window.location.pathname}${window.location.hash || '#latihan-soal'}`;
-      window.history.replaceState({}, '', cleanUrl);
-      setIsPaywallOpen(true);
-      void verifyPendingPayment(orderId);
-    }
-  }, [authReady, user, verifyPendingPayment]);
 
   // Keep live countdown synchronized with expiresAt
   useEffect(() => {
@@ -259,57 +228,71 @@ export function PaidPassProvider({ children }: { children: ReactNode }) {
     setPaywallErrorCode(null);
   }, []);
 
+  const openTokenAdmin = useCallback((tab: AdminPanelTab = 'orders') => {
+    setIsPaywallOpen(false);
+    setAdminPanelTab(tab);
+    setIsTokenAdminOpen(true);
+  }, []);
+
+  const closeTokenAdmin = useCallback(() => {
+    setIsTokenAdminOpen(false);
+  }, []);
+
   const clearPaywallError = useCallback(() => {
     setPaywallError(null);
     setPaywallErrorCode(null);
   }, []);
 
-  const createInvoice = useCallback(
-    async (mobile: string): Promise<boolean> => {
-      if (!user) return false;
-      setActionLoading(true);
-      setPaywallError(null);
-      setPaywallErrorCode(null);
-      try {
-        const token = await user.getIdToken();
-        const resp = await fetch('/api/payments/create-invoice', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ mobile }),
+  const createWhatsAppOrder = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+    setActionLoading(true);
+    setPaywallError(null);
+    setPaywallErrorCode(null);
+    try {
+      const token = await user.getIdToken();
+      const resp = await fetch('/api/payments/create-whatsapp-order', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      const data = (await resp.json()) as {
+        order?: PaidOrderSummary;
+        passStatus?: PassStatusResponse;
+        whatsappNumber?: string;
+        paymentNote?: string;
+        error?: string;
+        code?: string;
+      };
+
+      if (data.passStatus) {
+        applyServerSummary({
+          ...data.passStatus,
+          whatsappNumber: data.whatsappNumber ?? whatsappNumber,
+          paymentNote: data.paymentNote ?? paymentNote,
+          whatsappConfigured: Boolean(data.whatsappNumber ?? whatsappNumber),
         });
-
-        const data = (await resp.json()) as {
-          order?: PaidOrderSummary;
-          passStatus?: PassStatusResponse;
-          error?: string;
-          code?: string;
-        };
-
-        if (data.passStatus) {
-          applyServerSummary(data.passStatus);
-        } else if (data.order) {
-          setPendingOrder(data.order);
-        }
-
-        if (!resp.ok) {
-          setPaywallErrorCode(data.code ?? null);
-          setPaywallError(data.error || 'Gagal membuat invoice pembayaran Mayar.id.');
-          return false;
-        }
-
-        return true;
-      } catch {
-        setPaywallError('Gagal menghubungi server pembayaran. Coba beberapa saat lagi.');
-        return false;
-      } finally {
-        setActionLoading(false);
+      } else if (data.order) {
+        setPendingOrder(data.order);
       }
-    },
-    [user, applyServerSummary]
-  );
+
+      if (!resp.ok) {
+        setPaywallErrorCode(data.code ?? null);
+        setPaywallError(data.error || 'Gagal menyiapkan pesanan WhatsApp.');
+        return false;
+      }
+
+      return true;
+    } catch {
+      setPaywallError('Gagal menghubungi server. Coba beberapa saat lagi.');
+      return false;
+    } finally {
+      setActionLoading(false);
+    }
+  }, [user, applyServerSummary, whatsappNumber, paymentNote]);
 
   const value = useMemo<PaidPassContextValue>(
     () => ({
@@ -320,20 +303,25 @@ export function PaidPassProvider({ children }: { children: ReactNode }) {
       recentOrders,
       priceIdr,
       passDurationHours,
-      mayarConfigured,
-      mayarEnv,
+      whatsappConfigured,
+      whatsappNumber,
+      paymentNote,
       statusLoading,
       actionLoading,
       paywallError,
       paywallErrorCode,
       isPaywallOpen,
       paywallFeatureLabel,
+      isTokenAdminOpen,
+      adminPanelTab,
+      setAdminPanelTab,
       openPaywall,
       closePaywall,
+      openTokenAdmin,
+      closeTokenAdmin,
       clearPaywallError,
       refreshPassStatus,
-      createInvoice,
-      verifyPendingPayment,
+      createWhatsAppOrder,
     }),
     [
       hasActivePass,
@@ -343,20 +331,24 @@ export function PaidPassProvider({ children }: { children: ReactNode }) {
       recentOrders,
       priceIdr,
       passDurationHours,
-      mayarConfigured,
-      mayarEnv,
+      whatsappConfigured,
+      whatsappNumber,
+      paymentNote,
       statusLoading,
       actionLoading,
       paywallError,
       paywallErrorCode,
       isPaywallOpen,
       paywallFeatureLabel,
+      isTokenAdminOpen,
+      adminPanelTab,
       openPaywall,
       closePaywall,
+      openTokenAdmin,
+      closeTokenAdmin,
       clearPaywallError,
       refreshPassStatus,
-      createInvoice,
-      verifyPendingPayment,
+      createWhatsAppOrder,
     ]
   );
 

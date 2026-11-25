@@ -20,7 +20,7 @@ import { DownloadCenter } from './components/DownloadCenter';
 import { LoginModal } from './components/LoginModal';
 import { PaywallModal } from './components/PaywallModal';
 import { ShopeePromoPopup } from './components/ShopeePromoPopup';
-import { PromoAdminModal } from './components/PromoAdminModal';
+import { AdminPanelModal } from './components/AdminPanelModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import { PaidPassProvider } from './hooks/usePaidPass';
@@ -64,7 +64,7 @@ function AppShell() {
       <LoginModal />
       <PaywallModal />
       <ShopeePromoPopup />
-      <PromoAdminModal />
+      <AdminPanelModal />
 
           <main className="flex-1 overflow-x-clip">
             {/* Hero Section with Magnetic Dot Grid */}
